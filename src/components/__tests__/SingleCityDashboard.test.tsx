@@ -171,10 +171,10 @@ describe('SingleCityDashboard', () => {
     const data = JSON.parse(rawData!);
     expect(data).toHaveLength(4);
     
-    expect(data[0]).toEqual({ name: 'Rent/Housing', value: 1050, color: '#5090D4' });
-    expect(data[1]).toEqual({ name: 'Groceries', value: 540, color: '#E08A68' });
-    expect(data[2]).toEqual({ name: 'Healthcare', value: 350, color: '#4A9068' });
-    expect(data[3]).toEqual({ name: 'Others', value: 1060, color: '#B89450' });
+    expect(data[0]).toEqual({ name: 'Rent/Housing', value: 1050, color: 'var(--de-color)' });
+    expect(data[1]).toEqual({ name: 'Groceries', value: 540, color: 'var(--in-color)' });
+    expect(data[2]).toEqual({ name: 'Healthcare', value: 350, color: 'var(--positive)' });
+    expect(data[3]).toEqual({ name: 'Others', value: 1060, color: 'var(--accent)' });
   });
 
   it('renders Area Chart with correct drawdown timeline data', () => {

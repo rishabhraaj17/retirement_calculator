@@ -12,7 +12,6 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
-  Legend,
 } from 'recharts';
 import { CalculationResult } from '@/types';
 
@@ -36,10 +35,10 @@ function fmtFull(v: number): string {
 }
 
 const EXPENSE_PALETTE = {
-  housing: '#5090D4',   // Rent/Housing - German blue color
-  groceries: '#E08A68', // Groceries - India orange color
-  healthcare: '#4A9068',// Healthcare - Positive green color
-  other: '#B89450',     // Others - Accent gold color
+  housing: 'var(--de-color)',
+  groceries: 'var(--in-color)',
+  healthcare: 'var(--positive)',
+  other: 'var(--accent)',
 };
 
 export default function SingleCityDashboard({ result }: SingleCityDashboardProps) {
@@ -271,7 +270,7 @@ export default function SingleCityDashboard({ result }: SingleCityDashboardProps
               left: 0,
               right: 0,
               height: '2px',
-              backgroundColor: fundingGap > 0 ? '#D47050' : 'var(--positive)',
+              backgroundColor: fundingGap > 0 ? 'var(--in-color)' : 'var(--positive)',
               opacity: 0.65,
             }}
           />
@@ -282,7 +281,7 @@ export default function SingleCityDashboard({ result }: SingleCityDashboardProps
             style={{
               fontSize: '1.65rem',
               fontFamily: 'var(--font-mono)',
-              color: fundingGap > 0 ? '#D47050' : 'var(--positive)',
+              color: fundingGap > 0 ? 'var(--in-color)' : 'var(--positive)',
               fontWeight: 500,
               lineHeight: 1.2,
             }}
