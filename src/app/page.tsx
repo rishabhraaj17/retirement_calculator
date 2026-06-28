@@ -218,7 +218,7 @@ export default function Home() {
                     </span>
                     <select
                       value={selectedCityForSingle || ''}
-                      onChange={(e) => setSelectedCityForSingle(e.target.value)}
+                      onChange={(e) => setSelectedCityForSingle(e.target.value as CityName)}
                       data-testid="city-deep-dive-select"
                       style={{
                         backgroundColor: 'var(--bg-elevated)',
