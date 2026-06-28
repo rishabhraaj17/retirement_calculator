@@ -80,6 +80,19 @@ describe('Retirement Calculator', () => {
       expect(result.drawdownTimeline.length).toBeGreaterThan(0);
     });
 
+    it('should use baseMonthlyExpense from inputs', () => {
+      const result = calculateRetirementFund(mockMunich, { ...mockInputs, baseMonthlyExpense: 4000 }, mockAssumptions);
+      expect(result.totalMonthlyNeed).toBe(4000); // Munich CoL is 100
+    });
+
+    it('should apply cityExpenseOverrides directly', () => {
+      const result = calculateRetirementFund(mockMunich, {
+        ...mockInputs,
+        cityExpenseOverrides: { munich: 2500 }
+      }, mockAssumptions);
+      expect(result.totalMonthlyNeed).toBe(2500);
+    });
+
     it('should select country-specific inflation overrides correctly', () => {
       // Germany city (mockMunich) with override
       const resultGermany = calculateRetirementFund(mockMunich, mockInputs, {

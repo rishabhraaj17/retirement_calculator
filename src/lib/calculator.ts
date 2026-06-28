@@ -38,8 +38,10 @@ export function calculateRetirementFund(
     : assumptions.inflationRate;
 
   // Monthly expenses in today's money, scaled by city cost-of-living
-  const baseMonthlyExpense = 3000;
-  const monthlyExpenses = (baseMonthlyExpense * city.costOfLivingIndex) / 100;
+  const baseMonthlyExpense = inputs.baseMonthlyExpense ?? 3000;
+  const monthlyExpenses = inputs.cityExpenseOverrides?.[city.id] !== undefined
+    ? (inputs.cityExpenseOverrides[city.id] || 0)
+    : (baseMonthlyExpense * city.costOfLivingIndex) / 100;
   // Cost breakdown using realistic budget proportions
   const housing = monthlyExpenses * 0.35;
   const groceries = monthlyExpenses * 0.18;

@@ -24,6 +24,8 @@ export interface UserInputs {
   retirementAge: number;
   currentSavings: number;
   monthlyContribution: number;
+  baseMonthlyExpense?: number;
+  cityExpenseOverrides?: Record<string, number>;
 }
 
 // Assumptions interface for calculation parameters
