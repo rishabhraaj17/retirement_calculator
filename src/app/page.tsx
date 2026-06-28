@@ -19,6 +19,10 @@ const defaultAssumptions: Assumptions = {
   investmentReturn: 0.06,
   inflationRate: 0.04,
   retirementYears: 20,
+  countryInflation: {
+    Germany: 0.05,
+    India: 0.04,
+  },
 };
 
 const staticCities: City[] = [
