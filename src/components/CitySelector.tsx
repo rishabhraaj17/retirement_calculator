@@ -37,7 +37,7 @@ export default function CitySelector({ selectedCities, onSelectionChange }: City
       })
       .then(data => setCities(data))
       .catch(() => {
-        setError('Error loading cities. Using fallback data.');
+        setError('Error loading cities');
       })
       .finally(() => setLoading(false));
     } else {

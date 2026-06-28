@@ -6,6 +6,7 @@ import CitySelector from '@/components/CitySelector';
 import InputForm from '@/components/InputForm';
 import AssumptionsPanel from '@/components/AssumptionsPanel';
 import ComparisonDashboard from '@/components/ComparisonDashboard';
+import SingleCityDashboard from '@/components/SingleCityDashboard';
 import { calculateRetirementFund } from '@/lib/calculator';
 
 const defaultUserInputs: UserInputs = {
@@ -39,6 +40,11 @@ export default function Home() {
   const [userInputs, setUserInputs] = useState<UserInputs>(defaultUserInputs);
   const [assumptions, setAssumptions] = useState<Assumptions>(defaultAssumptions);
   const [results, setResults] = useState<CalculationResult[]>([]);
+  
+  // Tab view state: 'single' | 'compare'
+  const [viewTab, setViewTab] = useState<'single' | 'compare'>('single');
+  // Selected city for deep dive SingleCityDashboard
+  const [selectedCityForSingle, setSelectedCityForSingle] = useState<CityName | null>(null);
 
   useEffect(() => {
     fetch('/data/cities.json')
@@ -46,6 +52,20 @@ export default function Home() {
       .then(setCities)
       .catch(() => {});
   }, []);
+
+  // Manage viewTab default and selectedCityForSingle when selectedCities changes
+  useEffect(() => {
+    if (selectedCities.length === 1) {
+      setViewTab('single');
+      setSelectedCityForSingle(selectedCities[0]);
+    } else if (selectedCities.length > 1) {
+      if (!selectedCityForSingle || !selectedCities.includes(selectedCityForSingle)) {
+        setSelectedCityForSingle(selectedCities[0]);
+      }
+    } else {
+      setSelectedCityForSingle(null);
+    }
+  }, [selectedCities, selectedCityForSingle]);
 
   useEffect(() => {
     if (selectedCities.length > 0 && cities.length > 0) {
@@ -110,7 +130,131 @@ export default function Home() {
 
       {/* Main content */}
       <section style={{ overflowY: 'auto', padding: '32px 36px' }}>
-        <ComparisonDashboard results={results} />
+        {selectedCities.length === 0 ? (
+          <ComparisonDashboard results={results} />
+        ) : (
+          <>
+            {/* View switcher tabs */}
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              borderBottom: '1px solid var(--border-subtle)',
+              paddingBottom: '16px',
+              marginBottom: '28px'
+            }}>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <button
+                  onClick={() => setViewTab('single')}
+                  style={{
+                    padding: '8px 16px',
+                    borderRadius: 'var(--radius-xs)',
+                    backgroundColor: viewTab === 'single' ? 'var(--bg-elevated)' : 'transparent',
+                    border: '1px solid ' + (viewTab === 'single' ? 'var(--border-strong)' : 'transparent'),
+                    color: viewTab === 'single' ? 'var(--text-primary)' : 'var(--text-secondary)',
+                    fontFamily: 'var(--font-mono)',
+                    fontSize: '0.75rem',
+                    cursor: 'pointer',
+                    transition: 'all 0.14s ease',
+                    fontWeight: viewTab === 'single' ? 500 : 400,
+                  }}
+                >
+                  Single City Focus
+                </button>
+                <button
+                  onClick={() => setViewTab('compare')}
+                  style={{
+                    padding: '8px 16px',
+                    borderRadius: 'var(--radius-xs)',
+                    backgroundColor: viewTab === 'compare' ? 'var(--bg-elevated)' : 'transparent',
+                    border: '1px solid ' + (viewTab === 'compare' ? 'var(--border-strong)' : 'transparent'),
+                    color: viewTab === 'compare' ? 'var(--text-primary)' : 'var(--text-secondary)',
+                    fontFamily: 'var(--font-mono)',
+                    fontSize: '0.75rem',
+                    cursor: 'pointer',
+                    transition: 'all 0.14s ease',
+                    fontWeight: viewTab === 'compare' ? 500 : 400,
+                  }}
+                >
+                  Compare Cities
+                </button>
+              </div>
+
+              <div style={{
+                fontSize: '0.62rem',
+                fontFamily: 'var(--font-mono)',
+                color: 'var(--text-muted)',
+                textTransform: 'uppercase',
+                letterSpacing: '0.1em'
+              }}>
+                {selectedCities.length} {selectedCities.length === 1 ? 'City' : 'Cities'} Selected
+              </div>
+            </div>
+
+            {/* View contents */}
+            {viewTab === 'single' ? (
+              <>
+                {/* City dropdown selector for deep dive when 2+ cities selected */}
+                {selectedCities.length > 1 && (
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '10px',
+                    padding: '12px 16px',
+                    backgroundColor: 'var(--bg-surface)',
+                    border: '1px solid var(--border-subtle)',
+                    borderRadius: 'var(--radius-sm)',
+                    marginBottom: '24px',
+                    animation: 'fadeInUp 0.2s ease',
+                  }}>
+                    <span style={{
+                      fontSize: '0.68rem',
+                      fontFamily: 'var(--font-mono)',
+                      color: 'var(--text-muted)',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.08em'
+                    }}>
+                      Deep Dive Focus:
+                    </span>
+                    <select
+                      value={selectedCityForSingle || ''}
+                      onChange={(e) => setSelectedCityForSingle(e.target.value)}
+                      data-testid="city-deep-dive-select"
+                      style={{
+                        backgroundColor: 'var(--bg-elevated)',
+                        border: '1px solid var(--border-default)',
+                        borderRadius: 'var(--radius-xs)',
+                        color: 'var(--text-primary)',
+                        fontFamily: 'var(--font-body)',
+                        fontSize: '0.82rem',
+                        padding: '6px 12px',
+                        cursor: 'pointer',
+                        outline: 'none',
+                        minWidth: '160px',
+                      }}
+                    >
+                      {selectedCities.map(name => (
+                        <option key={name} value={name}>{name}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
+                {(() => {
+                  const activeCityName = selectedCityForSingle && selectedCities.includes(selectedCityForSingle)
+                    ? selectedCityForSingle
+                    : selectedCities[0] || null;
+                  const activeResult = results.find(r => r.city.name === activeCityName);
+                  return activeResult ? (
+                    <SingleCityDashboard result={activeResult} />
+                  ) : null;
+                })()}
+              </>
+            ) : (
+              <ComparisonDashboard results={results} />
+            )}
+          </>
+        )}
       </section>
     </div>
   );
