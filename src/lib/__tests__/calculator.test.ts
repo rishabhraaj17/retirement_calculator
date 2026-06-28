@@ -68,6 +68,90 @@ describe('Retirement Calculator', () => {
 
       expect(highCostResult.requiredFund).toBeGreaterThan(lowCostResult.requiredFund);
     });
+
+    it('should compute requiredSip, requiredLumpSum, and drawdownTimeline', () => {
+      const result = calculateRetirementFund(mockMunich, mockInputs, {
+        ...mockAssumptions,
+        countryInflation: { Germany: 0.05, India: 0.03 }
+      });
+      expect(result.requiredSip).toBeDefined();
+      expect(result.requiredLumpSum).toBeDefined();
+      expect(result.drawdownTimeline).toBeDefined();
+      expect(result.drawdownTimeline.length).toBeGreaterThan(0);
+    });
+
+    it('should select country-specific inflation overrides correctly', () => {
+      // Germany city (mockMunich) with override
+      const resultGermany = calculateRetirementFund(mockMunich, mockInputs, {
+        ...mockAssumptions,
+        countryInflation: { Germany: 0.05, India: 0.03 }
+      });
+      // India city with override
+      const mockDelhi: City = {
+        ...mockMunich,
+        name: 'Delhi NCR',
+        country: 'India',
+      };
+      const resultIndia = calculateRetirementFund(mockDelhi, mockInputs, {
+        ...mockAssumptions,
+        countryInflation: { Germany: 0.05, India: 0.03 }
+      });
+
+      // No overrides
+      const resultNoOverride = calculateRetirementFund(mockMunich, mockInputs, mockAssumptions);
+
+      // Verify that Germany inflation rate of 0.05 was used (larger required fund than no override of 0.02)
+      expect(resultGermany.requiredFund).toBeGreaterThan(resultNoOverride.requiredFund);
+      
+      // Verify that India inflation rate of 0.03 was used for Delhi
+      expect(resultGermany.requiredFund).toBeGreaterThan(resultIndia.requiredFund);
+      expect(resultIndia.requiredFund).toBeGreaterThan(resultNoOverride.requiredFund);
+    });
+
+    it('should calculate zero SIP and Lump Sum when projected fund exceeds required fund', () => {
+      const result = calculateRetirementFund(mockMunich, mockInputs, mockAssumptions);
+      expect(result.fundingGap).toBe(0);
+      expect(result.requiredSip).toBe(0);
+      expect(result.requiredLumpSum).toBe(0);
+    });
+
+    it('should calculate positive SIP and Lump Sum when gap exists', () => {
+      const poorInputs: UserInputs = {
+        currentAge: 30,
+        retirementAge: 65,
+        currentSavings: 0,
+        monthlyContribution: 0,
+      };
+      const result = calculateRetirementFund(mockMunich, poorInputs, mockAssumptions);
+      expect(result.fundingGap).toBeGreaterThan(0);
+      expect(result.requiredSip).toBeGreaterThan(0);
+      expect(result.requiredLumpSum).toBeGreaterThan(0);
+
+      // Verify lump sum math: requiredLumpSum * (1 + investmentReturn)^yearsToRetirement should be approx fundingGap
+      const years = 65 - 30;
+      const expectedGapFromLumpSum = result.requiredLumpSum * Math.pow(1 + mockAssumptions.investmentReturn, years);
+      expect(Math.abs(expectedGapFromLumpSum - result.fundingGap)).toBeLessThan(result.requiredLumpSum * 0.05); // allow rounding error
+    });
+
+    it('should track accumulation and drawdown phases correctly in drawdownTimeline', () => {
+      const result = calculateRetirementFund(mockMunich, mockInputs, mockAssumptions);
+      const timeline = result.drawdownTimeline;
+
+      // Accumulation phase should start at currentAge and end at retirementAge
+      const accumulationPoints = timeline.filter(p => p.phase === 'Accumulation');
+      expect(accumulationPoints[0].age).toBe(mockInputs.currentAge);
+      expect(accumulationPoints[accumulationPoints.length - 1].age).toBe(mockInputs.retirementAge);
+
+      // Retirement phase should start at retirementAge + 1 and have retirementYears length
+      const retirementPoints = timeline.filter(p => p.phase === 'Retirement');
+      expect(retirementPoints.length).toBe(mockAssumptions.retirementYears);
+      expect(retirementPoints[0].age).toBe(mockInputs.retirementAge + 1);
+      expect(retirementPoints[retirementPoints.length - 1].age).toBe(mockInputs.retirementAge + mockAssumptions.retirementYears);
+
+      // Ensure balance and net contributions are tracking as expected
+      expect(accumulationPoints[0].balance).toBe(mockInputs.currentSavings);
+      expect(accumulationPoints[0].netContributions).toBe(mockInputs.currentSavings);
+    });
   });
 
   describe('calculatePresentValue', () => {

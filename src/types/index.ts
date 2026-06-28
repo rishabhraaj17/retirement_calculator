@@ -31,6 +31,10 @@ export interface Assumptions {
   investmentReturn: number; // Annual return rate (default 6%)
   inflationRate: number; // Annual inflation rate
   retirementYears: number; // Years in retirement (life expectancy - retirement age)
+  countryInflation?: {
+    Germany: number;
+    India: number;
+  };
 }
 
 // Breakdown of cost components for a city
@@ -42,6 +46,13 @@ export interface CostBreakdown {
   other: number;
 }
 
+export interface DrawdownDataPoint {
+  age: number;
+  phase: 'Accumulation' | 'Retirement';
+  balance: number;
+  netContributions: number;
+}
+
 // Calculation result interface
 export interface CalculationResult {
   city: City;
@@ -51,6 +62,9 @@ export interface CalculationResult {
   yearsToRetirement: number;
   totalMonthlyNeed: number;
   breakdown: CostBreakdown;
+  requiredSip: number;
+  requiredLumpSum: number;
+  drawdownTimeline: DrawdownDataPoint[];
 }
 
 // API cache interface for caching external API responses
