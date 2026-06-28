@@ -18,9 +18,9 @@ interface ComparisonDashboardProps {
 }
 
 const CITY_PALETTE: Record<string, string> = {
-  Munich: '#4E90D4',
+  Munich: 'var(--de-color)',
   Berlin: '#72AEDD',
-  'Delhi NCR': '#D47050',
+  'Delhi NCR': 'var(--in-color)',
   Mumbai: '#E08A68',
   Bangalore: '#C86042',
 };
@@ -181,6 +181,8 @@ export default function ComparisonDashboard({ results }: ComparisonDashboardProp
     { key: 'requiredFund', label: 'Total Needed', getValue: (r) => r.requiredFund, highlight: true },
     { key: 'projectedFund', label: 'Projected', getValue: (r) => r.projectedFund, positive: true },
     { key: 'fundingGap', label: 'Funding Gap', getValue: (r) => r.fundingGap, danger: true },
+    { key: 'requiredSip', label: 'Required Add. SIP', getValue: (r) => r.requiredSip },
+    { key: 'requiredLumpSum', label: 'Lump Sum Needed', getValue: (r) => r.requiredLumpSum },
   ];
 
   return (
@@ -229,7 +231,7 @@ export default function ComparisonDashboard({ results }: ComparisonDashboardProp
         {results.map(result => {
           const isHigh = result === highest && results.length > 1;
           const isLow = result === lowest && results.length > 1;
-          const cityColor = CITY_PALETTE[result.city.name] ?? '#888';
+          const cityColor = CITY_PALETTE[result.city.name] ?? 'var(--text-muted)';
           const countryColor = result.city.country === 'Germany' ? 'var(--de-color)' : 'var(--in-color)';
 
           return (
@@ -354,8 +356,8 @@ export default function ComparisonDashboard({ results }: ComparisonDashboardProp
                     padding: '3px 7px',
                     borderRadius: '3px',
                     ...(result.fundingGap === 0
-                      ? { color: 'var(--positive)', border: '1px solid rgba(74,144,104,0.35)', backgroundColor: 'var(--positive-bg)' }
-                      : { color: '#D47050', border: '1px solid rgba(212,112,80,0.3)', backgroundColor: 'rgba(212,112,80,0.06)' }),
+                      ? { color: 'var(--positive)', border: '1px solid var(--positive)', backgroundColor: 'var(--positive-bg)' }
+                      : { color: 'var(--in-color)', border: '1px solid var(--in-color)', backgroundColor: 'var(--in-bg)' }),
                   }}
                 >
                   {result.fundingGap === 0
@@ -405,9 +407,9 @@ export default function ComparisonDashboard({ results }: ComparisonDashboardProp
             }}
           >
             Retiring in{' '}
-            <strong style={{ color: '#6AC490' }}>{lowest.city.name}</strong> vs{' '}
-            <strong style={{ color: '#6AC490' }}>{highest.city.name}</strong> reduces your required fund by{' '}
-            <strong style={{ color: '#6AC490' }}>{fmtFull(potentialSavings)}</strong>
+            <strong style={{ color: 'var(--positive)', fontWeight: 600 }}>{lowest.city.name}</strong> vs{' '}
+            <strong style={{ color: 'var(--positive)', fontWeight: 600 }}>{highest.city.name}</strong> reduces your required fund by{' '}
+            <strong style={{ color: 'var(--positive)', fontWeight: 600 }}>{fmtFull(potentialSavings)}</strong>
           </p>
         </div>
       )}
@@ -459,23 +461,19 @@ export default function ComparisonDashboard({ results }: ComparisonDashboardProp
             />
             <XAxis
               dataKey="city"
-              tick={{ fill: '#6A6880', fontSize: 10.5, fontFamily: 'DM Mono, monospace' }}
+              tick={{ fill: 'var(--text-secondary)', fontSize: 10.5, fontFamily: 'var(--font-mono)' }}
               axisLine={{ stroke: 'var(--border-subtle)' }}
               tickLine={false}
             />
             <YAxis
               tickFormatter={fmtShort}
-              tick={{ fill: '#6A6880', fontSize: 10, fontFamily: 'DM Mono, monospace' }}
+              tick={{ fill: 'var(--text-secondary)', fontSize: 10, fontFamily: 'var(--font-mono)' }}
               axisLine={false}
               tickLine={false}
               width={62}
             />
-            <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(255,255,255,0.03)' }} />
-            <Bar dataKey="required" name="Needed" radius={[4, 4, 0, 0]}>
-              {chartData.map((entry, i) => (
-                <Cell key={i} fill={entry.fill} fillOpacity={0.8} />
-              ))}
-            </Bar>
+            <Tooltip content={<CustomTooltip />} cursor={{ fill: 'var(--bg-hover)', opacity: 0.4 }} />
+            <Bar dataKey="required" name="Needed" radius={[4, 4, 0, 0]} fill="var(--accent)" fillOpacity={0.8} />
             <Bar dataKey="projected" name="Projected" radius={[4, 4, 0, 0]} fill="var(--positive)" fillOpacity={0.7} />
           </BarChart>
         </ResponsiveContainer>
@@ -547,7 +545,7 @@ export default function ComparisonDashboard({ results }: ComparisonDashboardProp
                       : row.positive
                       ? 'var(--positive)'
                       : row.danger && val > 0
-                      ? '#D47050'
+                      ? 'var(--in-color)'
                       : row.danger
                       ? 'var(--positive)'
                       : 'var(--text-secondary)';

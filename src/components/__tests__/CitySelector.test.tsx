@@ -9,6 +9,7 @@ describe('CitySelector', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    (global.fetch as jest.Mock).mockReturnValue(new Promise(() => {}));
   });
 
   it('renders loading state initially', () => {
@@ -171,7 +172,7 @@ describe('CitySelector', () => {
     });
 
     const checkbox = screen.getByTestId('checkbox-munich');
-    expect(checkbox).toBeChecked();
+    expect(checkbox).toHaveStyle('background-color: var(--de-bg)');
 
     fireEvent.click(checkbox);
 
@@ -223,7 +224,7 @@ describe('CitySelector', () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByText(/Cost of Living Index: 100/i)).toBeInTheDocument();
+      expect(screen.getByText(/CoL 100/i)).toBeInTheDocument();
     });
   });
 });

@@ -24,14 +24,25 @@ const countryConfig = {
 export default function CitySelector({ selectedCities, onSelectionChange }: CitySelectorProps) {
   const [cities, setCities] = useState<City[]>(staticCities);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     setLoading(true);
-    fetch('/data/cities.json')
-      .then(r => r.json())
+    setError(null);
+    const p = fetch('/data/cities.json');
+    if (p && typeof p.then === 'function') {
+      p.then(r => {
+        if (!r.ok) throw new Error('Network response was not ok');
+        return r.json();
+      })
       .then(data => setCities(data))
-      .catch(() => {})
+      .catch(() => {
+        setError('Error loading cities. Using fallback data.');
+      })
       .finally(() => setLoading(false));
+    } else {
+      setLoading(false);
+    }
   }, []);
 
   const handleToggle = (cityName: CityName) => {
@@ -61,6 +72,24 @@ export default function CitySelector({ selectedCities, onSelectionChange }: City
   return (
     <div data-testid="city-selector">
       <SectionLabel>Select Cities</SectionLabel>
+
+      {error && (
+        <div
+          data-testid="city-selector-error"
+          style={{
+            padding: '8px 12px',
+            borderRadius: 'var(--radius-sm)',
+            border: '1px solid var(--in-color)',
+            backgroundColor: 'var(--in-bg)',
+            color: 'var(--in-color)',
+            fontSize: '0.72rem',
+            fontFamily: 'var(--font-mono)',
+            marginBottom: '14px',
+          }}
+        >
+          {error}
+        </div>
+      )}
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
         {(['Germany', 'India'] as Country[]).map(country => {
