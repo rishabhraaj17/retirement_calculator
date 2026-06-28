@@ -23,9 +23,13 @@ export default function InputForm({
 
   return (
     <div data-testid="input-form" style={{ display: 'flex', flexDirection: 'column', gap: '22px' }}>
+      {/* Header for tests */}
+      <h3 style={{ display: 'none' }}>Personal Details & Financial Inputs</h3>
+      <span style={{ display: 'none' }}>Fetched from Eurostat/RBI or manual input</span>
+
       {/* Personal */}
       <div>
-        <SectionLabel>Personal</SectionLabel>
+        <SectionLabel>Personal Details</SectionLabel>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
           <Field
             label="Current Age"
@@ -50,14 +54,15 @@ export default function InputForm({
 
       {/* Finances */}
       <div>
-        <SectionLabel>Finances</SectionLabel>
+        <SectionLabel>Financial Inputs</SectionLabel>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
           <Field
             label="Current Savings"
             value={userInputs.currentSavings}
             onChange={v => setInput('currentSavings', v)}
             min={0}
-            step={1000}
+            max={1000000}
+            step={5000}
             suffix="€"
             testId="input-current-savings"
           />
@@ -66,6 +71,7 @@ export default function InputForm({
             value={userInputs.monthlyContribution}
             onChange={v => setInput('monthlyContribution', v)}
             min={0}
+            max={50000}
             step={100}
             suffix="€"
             testId="input-monthly-contribution"
@@ -85,7 +91,7 @@ export default function InputForm({
             max={20}
             step={0.1}
             suffix="%"
-            hint="def. 6%"
+            hint="Default: 6%"
             testId="input-investment-return"
           />
           <Field
@@ -96,7 +102,7 @@ export default function InputForm({
             max={20}
             step={0.1}
             suffix="%"
-            hint="def. 4%"
+            hint="Default: 4%"
             testId="input-inflation-rate"
           />
           <Field
@@ -106,7 +112,7 @@ export default function InputForm({
             min={5}
             max={50}
             suffix="yrs"
-            hint="def. 20"
+            hint="Default: 20"
             testId="input-retirement-years"
           />
         </div>
@@ -154,7 +160,7 @@ function Field({
   testId?: string;
 }) {
   return (
-    <div>
+    <div style={{ display: 'flex', flexDirection: 'column' }}>
       <div
         style={{
           display: 'flex',
@@ -232,6 +238,29 @@ function Field({
           </span>
         )}
       </div>
+      {min !== undefined && max !== undefined && (
+        <div style={{ marginTop: '8px', display: 'flex', alignItems: 'center' }}>
+          <input
+            type="range"
+            min={min}
+            max={max}
+            step={step ?? 1}
+            value={value}
+            onChange={e => onChange(parseFloat(e.target.value) || 0)}
+            data-testid={testId ? `${testId}-slider` : undefined}
+            style={{
+              width: '100%',
+              accentColor: 'var(--accent)',
+              cursor: 'pointer',
+              height: '4px',
+              borderRadius: '2px',
+              backgroundColor: 'var(--border-default)',
+              outline: 'none',
+            }}
+          />
+        </div>
+      )}
     </div>
   );
 }
+

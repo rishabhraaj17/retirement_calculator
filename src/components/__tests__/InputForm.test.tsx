@@ -202,7 +202,7 @@ describe('InputForm', () => {
       />
     );
 
-    expect(screen.getByText(/Default: 6%/i)).toBeInTheDocument();
+    expect(screen.getByText('Default: 6%')).toBeInTheDocument();
   });
 
   it('shows inflation rate hint about data sources', () => {
@@ -215,6 +215,44 @@ describe('InputForm', () => {
       />
     );
 
-    expect(screen.getByText(/Fetched from Eurostat\/RBI or manual input/i)).toBeInTheDocument();
+    expect(screen.getByText('Fetched from Eurostat/RBI or manual input')).toBeInTheDocument();
+  });
+
+  it('renders range sliders for all inputs', () => {
+    render(
+      <InputForm
+        userInputs={mockUserInputs}
+        assumptions={mockAssumptions}
+        onUserInputsChange={mockOnUserInputsChange}
+        onAssumptionsChange={mockOnAssumptionsChange}
+      />
+    );
+
+    expect(screen.getByTestId('input-current-age-slider')).toBeInTheDocument();
+    expect(screen.getByTestId('input-retirement-age-slider')).toBeInTheDocument();
+    expect(screen.getByTestId('input-current-savings-slider')).toBeInTheDocument();
+    expect(screen.getByTestId('input-monthly-contribution-slider')).toBeInTheDocument();
+    expect(screen.getByTestId('input-investment-return-slider')).toBeInTheDocument();
+    expect(screen.getByTestId('input-inflation-rate-slider')).toBeInTheDocument();
+    expect(screen.getByTestId('input-retirement-years-slider')).toBeInTheDocument();
+  });
+
+  it('calls onUserInputsChange when a slider is adjusted', () => {
+    render(
+      <InputForm
+        userInputs={mockUserInputs}
+        assumptions={mockAssumptions}
+        onUserInputsChange={mockOnUserInputsChange}
+        onAssumptionsChange={mockOnAssumptionsChange}
+      />
+    );
+
+    const currentAgeSlider = screen.getByTestId('input-current-age-slider');
+    fireEvent.change(currentAgeSlider, { target: { value: '40' } });
+
+    expect(mockOnUserInputsChange).toHaveBeenCalledWith({
+      ...mockUserInputs,
+      currentAge: 40,
+    });
   });
 });
