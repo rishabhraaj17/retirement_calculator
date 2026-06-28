@@ -146,6 +146,55 @@ describe('InputForm', () => {
     });
   });
 
+  it('renders base monthly expense input with default value when not provided', () => {
+    render(
+      <InputForm
+        userInputs={mockUserInputs}
+        assumptions={mockAssumptions}
+        onUserInputsChange={mockOnUserInputsChange}
+        onAssumptionsChange={mockOnAssumptionsChange}
+      />
+    );
+
+    const expenseInput = screen.getByTestId('input-base-monthly-expense') as HTMLInputElement;
+    expect(expenseInput).toBeInTheDocument();
+    expect(expenseInput.value).toBe('3000');
+  });
+
+  it('renders base monthly expense input with correct value when provided', () => {
+    render(
+      <InputForm
+        userInputs={{ ...mockUserInputs, baseMonthlyExpense: 4500 }}
+        assumptions={mockAssumptions}
+        onUserInputsChange={mockOnUserInputsChange}
+        onAssumptionsChange={mockOnAssumptionsChange}
+      />
+    );
+
+    const expenseInput = screen.getByTestId('input-base-monthly-expense') as HTMLInputElement;
+    expect(expenseInput).toBeInTheDocument();
+    expect(expenseInput.value).toBe('4500');
+  });
+
+  it('calls onUserInputsChange when base monthly expense changes', () => {
+    render(
+      <InputForm
+        userInputs={mockUserInputs}
+        assumptions={mockAssumptions}
+        onUserInputsChange={mockOnUserInputsChange}
+        onAssumptionsChange={mockOnAssumptionsChange}
+      />
+    );
+
+    const expenseInput = screen.getByTestId('input-base-monthly-expense');
+    fireEvent.change(expenseInput, { target: { value: '3500' } });
+
+    expect(mockOnUserInputsChange).toHaveBeenCalledWith({
+      ...mockUserInputs,
+      baseMonthlyExpense: 3500,
+    });
+  });
+
   it('calls onAssumptionsChange when investment return changes', () => {
     render(
       <InputForm
@@ -232,6 +281,7 @@ describe('InputForm', () => {
     expect(screen.getByTestId('input-retirement-age-slider')).toBeInTheDocument();
     expect(screen.getByTestId('input-current-savings-slider')).toBeInTheDocument();
     expect(screen.getByTestId('input-monthly-contribution-slider')).toBeInTheDocument();
+    expect(screen.getByTestId('input-base-monthly-expense-slider')).toBeInTheDocument();
     expect(screen.getByTestId('input-investment-return-slider')).toBeInTheDocument();
     expect(screen.getByTestId('input-inflation-rate-slider')).toBeInTheDocument();
     expect(screen.getByTestId('input-retirement-years-slider')).toBeInTheDocument();

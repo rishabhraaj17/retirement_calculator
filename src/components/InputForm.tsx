@@ -76,6 +76,17 @@ export default function InputForm({
             suffix="€"
             testId="input-monthly-contribution"
           />
+          <Field
+            label="Base Monthly Expense"
+            value={userInputs.baseMonthlyExpense ?? 3000}
+            onChange={v => setInput('baseMonthlyExpense', v)}
+            min={500}
+            max={20000}
+            step={100}
+            suffix="€"
+            hint="Default: 3000"
+            testId="input-base-monthly-expense"
+          />
         </div>
       </div>
 
