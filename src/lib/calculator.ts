@@ -32,17 +32,22 @@ export function calculateRetirementFund(
   assumptions: Assumptions
 ): CalculationResult {
   const inflation = assumptions.countryInflation
-    ? (city.country === 'Germany' ? assumptions.countryInflation.Germany : assumptions.countryInflation.India)
+    ? (city.country === 'Germany'
+        ? assumptions.countryInflation.Germany
+        : (city.country === 'India' ? assumptions.countryInflation.India : assumptions.inflationRate))
     : assumptions.inflationRate;
 
+  // Monthly expenses in today's money, scaled by city cost-of-living
   const baseMonthlyExpense = 3000;
   const monthlyExpenses = (baseMonthlyExpense * city.costOfLivingIndex) / 100;
+  // Cost breakdown using realistic budget proportions
   const housing = monthlyExpenses * 0.35;
   const groceries = monthlyExpenses * 0.18;
   const healthcare = city.healthcareCostMonthly;
   const other = Math.max(0, monthlyExpenses - housing - groceries - healthcare);
   const breakdown: CostBreakdown = { monthlyExpenses, housing, groceries, healthcare, other };
 
+  // Total lump sum needed on retirement day 1
   const requiredFund = calculatePresentValue(
     monthlyExpenses,
     inflation,
@@ -50,11 +55,14 @@ export function calculateRetirementFund(
     assumptions.retirementYears
   );
 
+  // Accumulation phase: years from now until retirement
   const yearsToRetirement = Math.max(0, inputs.retirementAge - inputs.currentAge);
   const monthlyReturn = assumptions.investmentReturn / 12;
   const totalMonths = yearsToRetirement * 12;
 
+  // Future value of current savings, compounded at investment return
   const fvCurrentSavings = inputs.currentSavings * Math.pow(1 + assumptions.investmentReturn, yearsToRetirement);
+  // Future value of monthly contributions (ordinary annuity)
   const fvContributions = monthlyReturn > 0
     ? inputs.monthlyContribution * ((Math.pow(1 + monthlyReturn, totalMonths) - 1) / monthlyReturn)
     : inputs.monthlyContribution * totalMonths;
@@ -77,22 +85,25 @@ export function calculateRetirementFund(
 
   // Generate Drawdown Timeline
   const drawdownTimeline: DrawdownDataPoint[] = [];
-  let currentBalance = inputs.currentSavings;
   let netContributions = inputs.currentSavings;
 
   // Accumulation Phase
   for (let age = inputs.currentAge; age <= inputs.retirementAge; age++) {
+    const years = age - inputs.currentAge;
+    const fvSavingsAtAge = inputs.currentSavings * Math.pow(1 + assumptions.investmentReturn, years);
+    const monthsAtAge = years * 12;
+    const fvContributionsAtAge = monthlyReturn > 0
+      ? inputs.monthlyContribution * ((Math.pow(1 + monthlyReturn, monthsAtAge) - 1) / monthlyReturn)
+      : inputs.monthlyContribution * monthsAtAge;
+    const balance = Math.round(fvSavingsAtAge + fvContributionsAtAge);
+    netContributions = inputs.currentSavings + (inputs.monthlyContribution * 12 * years);
+
     drawdownTimeline.push({
       age,
       phase: 'Accumulation',
-      balance: Math.round(currentBalance),
+      balance,
       netContributions: Math.round(netContributions),
     });
-
-    if (age < inputs.retirementAge) {
-      currentBalance = currentBalance * (1 + assumptions.investmentReturn) + (inputs.monthlyContribution * 12);
-      netContributions += inputs.monthlyContribution * 12;
-    }
   }
 
   // Transition: add Lump Sum at retirement start if any
