@@ -1,0 +1,52 @@
+[
+  {
+    "id": "munich",
+    "name": "Munich",
+    "country": "Germany",
+    "costOfLivingIndex": 100,
+    "rentIndex": 88,
+    "groceriesIndex": 105,
+    "healthcareCostMonthly": 350,
+    "taxRate": 0.15
+  },
+  {
+    "id": "berlin",
+    "name": "Berlin",
+    "country": "Germany",
+    "costOfLivingIndex": 82,
+    "rentIndex": 68,
+    "groceriesIndex": 98,
+    "healthcareCostMonthly": 350,
+    "taxRate": 0.15
+  },
+  {
+    "id": "delhi-ncr",
+    "name": "Delhi NCR",
+    "country": "India",
+    "costOfLivingIndex": 25,
+    "rentIndex": 20,
+    "groceriesIndex": 22,
+    "healthcareCostMonthly": 150,
+    "taxRate": 0.10
+  },
+  {
+    "id": "mumbai",
+    "name": "Mumbai",
+    "country": "India",
+    "costOfLivingIndex": 30,
+    "rentIndex": 35,
+    "groceriesIndex": 28,
+    "healthcareCostMonthly": 200,
+    "taxRate": 0.10
+  },
+  {
+    "id": "bangalore",
+    "name": "Bangalore",
+    "country": "India",
+    "costOfLivingIndex": 28,
+    "rentIndex": 25,
+    "groceriesIndex": 26,
+    "healthcareCostMonthly": 180,
+    "taxRate": 0.10
+  }
+]

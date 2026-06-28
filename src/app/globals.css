@@ -1,3 +1,142 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+:root {
+  /* Dark theme (default) */
+  --bg-base: #07080F;
+  --bg-surface: #0D0F1A;
+  --bg-elevated: #131627;
+  --bg-hover: #191D32;
+  --border-subtle: #181B2E;
+  --border-default: #22263C;
+  --border-strong: #2E3450;
+  --text-primary: #E2E0F0;
+  --text-secondary: #8887A6;
+  --text-muted: #4C4B66;
+  --accent: #B89450;
+  --accent-light: #D4AE6A;
+  --accent-glow: rgba(184, 148, 80, 0.12);
+  --de-color: #5090D4;
+  --de-bg: rgba(80, 144, 212, 0.06);
+  --in-color: #D47050;
+  --in-bg: rgba(212, 112, 80, 0.06);
+  --positive: #4A9068;
+  --positive-bg: rgba(74, 144, 104, 0.06);
+  --header-bg: rgba(7, 8, 15, 0.94);
+  --font-display: var(--font-cormorant), 'Cormorant Garamond', Georgia, serif;
+  --font-body: var(--font-dm-sans), 'DM Sans', system-ui, sans-serif;
+  --font-mono: var(--font-dm-mono), 'DM Mono', 'Courier New', monospace;
+  --radius-xs: 4px;
+  --radius-sm: 6px;
+  --radius: 10px;
+  --radius-lg: 16px;
+}
+
+[data-theme='light'] {
+  --bg-base: #F5F1EA;
+  --bg-surface: #EDE8DF;
+  --bg-elevated: #E6E0D5;
+  --bg-hover: #DED7C9;
+  --border-subtle: #D8D0C2;
+  --border-default: #C8BFB0;
+  --border-strong: #B0A898;
+  --text-primary: #1A1812;
+  --text-secondary: #58524A;
+  --text-muted: #9A9080;
+  --accent: #9A7030;
+  --accent-light: #B08840;
+  --accent-glow: rgba(154, 112, 48, 0.14);
+  --de-color: #2860A8;
+  --de-bg: rgba(40, 96, 168, 0.08);
+  --in-color: #B84020;
+  --in-bg: rgba(184, 64, 32, 0.08);
+  --positive: #286040;
+  --positive-bg: rgba(40, 96, 64, 0.08);
+  --header-bg: rgba(245, 241, 234, 0.94);
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  background-color: var(--bg-base);
+  height: 100%;
+}
+
+body {
+  background-color: var(--bg-base);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  height: 100%;
+  line-height: 1.5;
+}
+
+/* Spin animation for loading states */
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.25; }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
+}
+
+/* Number inputs — hide spinners */
+input[type='number']::-webkit-outer-spin-button,
+input[type='number']::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type='number'] {
+  -moz-appearance: textfield;
+}
+
+/* Responsive layout */
+.app-layout {
+  display: grid;
+  grid-template-columns: 380px 1fr;
+  height: calc(100vh - 65px);
+}
+
+@media (max-width: 900px) {
+  .app-layout {
+    grid-template-columns: 1fr;
+    height: auto;
+  }
+}
