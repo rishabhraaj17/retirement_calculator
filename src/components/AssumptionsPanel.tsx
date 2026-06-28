@@ -6,22 +6,38 @@ import { Assumptions } from '@/types';
 interface AssumptionsPanelProps {
   assumptions: Assumptions;
   onRefresh: () => void;
+  onAssumptionsChange: (assumptions: Assumptions) => void;
 }
 
-const INFLATION_RATES = {
-  Germany: 0.05,
-  India: 0.04,
-};
-
-export default function AssumptionsPanel({ assumptions, onRefresh }: AssumptionsPanelProps) {
+export default function AssumptionsPanel({
+  assumptions,
+  onRefresh,
+  onAssumptionsChange,
+}: AssumptionsPanelProps) {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [hovered, setHovered] = useState(false);
+
+  const countryInflation = assumptions.countryInflation || {
+    Germany: 0.05,
+    India: 0.04,
+  };
 
   const handleRefresh = async () => {
     setIsRefreshing(true);
     await new Promise(r => setTimeout(r, 1000));
     onRefresh();
     setIsRefreshing(false);
+  };
+
+  const handleRateChange = (country: 'Germany' | 'India', newRate: number) => {
+    const updatedCountryInflation = {
+      ...countryInflation,
+      [country]: newRate,
+    };
+    onAssumptionsChange({
+      ...assumptions,
+      countryInflation: updatedCountryInflation,
+    });
   };
 
   return (
@@ -42,20 +58,24 @@ export default function AssumptionsPanel({ assumptions, onRefresh }: Assumptions
         <InflationCard
           flag="🇩🇪"
           label="Germany"
-          rate={INFLATION_RATES.Germany}
+          rate={countryInflation.Germany}
           color="var(--de-color)"
           bg="var(--de-bg)"
           source="Eurostat"
           testId="inflation-source-germany"
+          inputTestId="input-inflation-germany"
+          onRateChange={(newRate) => handleRateChange('Germany', newRate)}
         />
         <InflationCard
           flag="🇮🇳"
           label="India"
-          rate={INFLATION_RATES.India}
+          rate={countryInflation.India}
           color="var(--in-color)"
           bg="var(--in-bg)"
           source="RBI"
           testId="inflation-source-india"
+          inputTestId="input-inflation-india"
+          onRateChange={(newRate) => handleRateChange('India', newRate)}
         />
       </div>
 
@@ -127,6 +147,8 @@ function InflationCard({
   bg,
   source,
   testId,
+  inputTestId,
+  onRateChange,
 }: {
   flag: string;
   label: string;
@@ -135,6 +157,8 @@ function InflationCard({
   bg: string;
   source: string;
   testId: string;
+  inputTestId: string;
+  onRateChange: (newRate: number) => void;
 }) {
   return (
     <div
@@ -168,11 +192,28 @@ function InflationCard({
           fontFamily: 'var(--font-mono)',
           color,
           fontWeight: 500,
-          lineHeight: 1,
+          lineHeight: 1.2,
           marginBottom: '4px',
         }}
       >
-        {(rate * 100).toFixed(1)}%
+        <input
+          data-testid={inputTestId}
+          type="number"
+          value={parseFloat((rate * 100).toFixed(1))}
+          onChange={e => onRateChange(parseFloat(e.target.value) / 100 || 0)}
+          step="0.1"
+          style={{
+            background: 'transparent',
+            border: 'none',
+            borderBottom: '1px dashed var(--accent)',
+            color: 'inherit',
+            fontSize: '1.35rem',
+            fontFamily: 'var(--font-mono)',
+            width: '80px',
+            outline: 'none',
+          }}
+        />
+        %
       </div>
       <div
         style={{
@@ -187,3 +228,4 @@ function InflationCard({
     </div>
   );
 }
+

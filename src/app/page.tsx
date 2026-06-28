@@ -99,6 +99,7 @@ export default function Home() {
           <AssumptionsPanel
             assumptions={assumptions}
             onRefresh={() => setAssumptions({ ...assumptions })}
+            onAssumptionsChange={setAssumptions}
           />
         </div>
       </aside>
