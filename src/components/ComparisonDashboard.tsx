@@ -19,10 +19,10 @@ interface ComparisonDashboardProps {
 
 const CITY_PALETTE: Record<string, string> = {
   Munich: 'var(--de-color)',
-  Berlin: '#72AEDD',
+  Berlin: 'var(--de-color)',
   'Delhi NCR': 'var(--in-color)',
-  Mumbai: '#E08A68',
-  Bangalore: '#C86042',
+  Mumbai: 'var(--in-color)',
+  Bangalore: 'var(--in-color)',
 };
 
 function fmtShort(v: number): string {
@@ -357,7 +357,7 @@ export default function ComparisonDashboard({ results }: ComparisonDashboardProp
                     borderRadius: '3px',
                     ...(result.fundingGap === 0
                       ? { color: 'var(--positive)', border: '1px solid var(--positive)', backgroundColor: 'var(--positive-bg)' }
-                      : { color: 'var(--in-color)', border: '1px solid var(--in-color)', backgroundColor: 'var(--in-bg)' }),
+                      : { color: 'var(--danger)', border: '1px solid var(--danger)', backgroundColor: 'var(--danger-bg)' }),
                   }}
                 >
                   {result.fundingGap === 0

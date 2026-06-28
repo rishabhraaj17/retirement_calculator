@@ -21,6 +21,8 @@
   --de-bg: rgba(80, 144, 212, 0.06);
   --in-color: #D47050;
   --in-bg: rgba(212, 112, 80, 0.06);
+  --danger: #D47050;
+  --danger-bg: rgba(212, 112, 80, 0.06);
   --positive: #4A9068;
   --positive-bg: rgba(74, 144, 104, 0.06);
   --header-bg: rgba(7, 8, 15, 0.94);
@@ -51,6 +53,8 @@
   --de-bg: rgba(40, 96, 168, 0.08);
   --in-color: #B84020;
   --in-bg: rgba(184, 64, 32, 0.08);
+  --danger: #B84020;
+  --danger-bg: rgba(184, 64, 32, 0.08);
   --positive: #286040;
   --positive-bg: rgba(40, 96, 64, 0.08);
   --header-bg: rgba(245, 241, 234, 0.94);

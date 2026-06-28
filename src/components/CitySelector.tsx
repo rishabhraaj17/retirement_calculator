@@ -79,9 +79,9 @@ export default function CitySelector({ selectedCities, onSelectionChange }: City
           style={{
             padding: '8px 12px',
             borderRadius: 'var(--radius-sm)',
-            border: '1px solid var(--in-color)',
-            backgroundColor: 'var(--in-bg)',
-            color: 'var(--in-color)',
+            border: '1px solid var(--danger)',
+            backgroundColor: 'var(--danger-bg)',
+            color: 'var(--danger)',
             fontSize: '0.72rem',
             fontFamily: 'var(--font-mono)',
             marginBottom: '14px',
@@ -134,6 +134,8 @@ export default function CitySelector({ selectedCities, onSelectionChange }: City
                       key={city.id}
                       onClick={() => handleToggle(city.name)}
                       data-testid={`checkbox-${city.id}`}
+                      role="checkbox"
+                      aria-checked={isSelected}
                       style={{
                         padding: '8px 13px',
                         borderRadius: 'var(--radius-sm)',
