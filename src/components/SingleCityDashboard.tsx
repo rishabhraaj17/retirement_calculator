@@ -13,10 +13,12 @@ import {
   CartesianGrid,
   Tooltip,
 } from 'recharts';
-import { CalculationResult } from '@/types';
+import { CalculationResult, UserInputs } from '@/types';
 
 interface SingleCityDashboardProps {
   result: CalculationResult;
+  userInputs?: UserInputs;
+  onUserInputsChange?: (inputs: UserInputs) => void;
 }
 
 function fmtShort(v: number): string {
@@ -41,7 +43,11 @@ const EXPENSE_PALETTE = {
   other: 'var(--accent)',
 };
 
-export default function SingleCityDashboard({ result }: SingleCityDashboardProps) {
+export default function SingleCityDashboard({
+  result,
+  userInputs,
+  onUserInputsChange,
+}: SingleCityDashboardProps) {
   if (!result) return null;
 
   const {
@@ -55,6 +61,32 @@ export default function SingleCityDashboard({ result }: SingleCityDashboardProps
     requiredLumpSum,
     drawdownTimeline,
   } = result;
+
+  const standardAvg = ((userInputs?.baseMonthlyExpense ?? 3000) * city.costOfLivingIndex) / 100;
+  const isOverridden = Math.abs(totalMonthlyNeed - standardAvg) > 0.01;
+  const diffPct = standardAvg > 0 ? Math.round(((totalMonthlyNeed - standardAvg) / standardAvg) * 100) : 0;
+
+  const handleOverride = (val: number) => {
+    if (!userInputs || !onUserInputsChange) return;
+    const updatedOverrides = {
+      ...(userInputs.cityExpenseOverrides || {}),
+      [city.id]: val,
+    };
+    onUserInputsChange({
+      ...userInputs,
+      cityExpenseOverrides: updatedOverrides,
+    });
+  };
+
+  const handleReset = () => {
+    if (!userInputs || !onUserInputsChange) return;
+    const updatedOverrides = { ...(userInputs.cityExpenseOverrides || {}) };
+    delete updatedOverrides[city.id];
+    onUserInputsChange({
+      ...userInputs,
+      cityExpenseOverrides: updatedOverrides,
+    });
+  };
 
   const countryFlag = city.country === 'Germany' ? '🇩🇪' : '🇮🇳';
   const countryColor = city.country === 'Germany' ? 'var(--de-color)' : 'var(--in-color)';
@@ -379,9 +411,73 @@ export default function SingleCityDashboard({ result }: SingleCityDashboardProps
             >
               Monthly Expenses Breakdown
             </h3>
-            <p style={{ fontSize: '0.62rem', color: 'var(--text-secondary)', fontFamily: 'var(--font-mono)', letterSpacing: '0.04em', marginTop: '2px' }}>
-              TOTAL BUDGET: {fmtFull(totalMonthlyNeed)}/mo
-            </p>
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                marginTop: '4px',
+                flexWrap: 'wrap',
+              }}
+            >
+              <span style={{ fontSize: '0.62rem', color: 'var(--text-secondary)', fontFamily: 'var(--font-mono)', letterSpacing: '0.04em' }}>
+                TOTAL BUDGET: €
+              </span>
+              <input
+                type="number"
+                value={Math.round(totalMonthlyNeed)}
+                onChange={e => handleOverride(parseFloat(e.target.value) || 0)}
+                disabled={!onUserInputsChange}
+                style={{
+                  backgroundColor: 'var(--bg-elevated)',
+                  border: '1px solid var(--border-default)',
+                  borderRadius: 'var(--radius-xs)',
+                  color: 'var(--text-primary)',
+                  fontFamily: 'var(--font-mono)',
+                  width: '100px',
+                  padding: '4px 8px',
+                  fontSize: '0.85rem'
+                }}
+              />
+              <span style={{ fontSize: '0.62rem', color: 'var(--text-secondary)', fontFamily: 'var(--font-mono)', letterSpacing: '0.04em' }}>
+                /mo
+              </span>
+
+              {isOverridden && (
+                <>
+                  <span
+                    data-testid="comparison-badge"
+                    style={{
+                      fontSize: '0.6rem',
+                      fontFamily: 'var(--font-mono)',
+                      letterSpacing: '0.08em',
+                      textTransform: 'uppercase',
+                      padding: '3px 7px',
+                      borderRadius: '3px',
+                      border: `1px solid ${diffPct > 0 ? 'var(--danger)' : 'var(--positive)'}`,
+                      color: diffPct > 0 ? 'var(--danger)' : 'var(--positive)',
+                      backgroundColor: diffPct > 0 ? 'var(--danger-bg)' : 'var(--positive-bg)',
+                    }}
+                  >
+                    {diffPct > 0 ? `+${diffPct}%` : `${diffPct}%`} vs average
+                  </span>
+                  <button
+                    onClick={handleReset}
+                    style={{
+                      color: 'var(--accent)',
+                      cursor: 'pointer',
+                      background: 'transparent',
+                      border: 'none',
+                      fontSize: '0.7rem',
+                      fontFamily: 'var(--font-mono)',
+                      padding: 0,
+                    }}
+                  >
+                    Reset to Average
+                  </button>
+                </>
+              )}
+            </div>
           </div>
 
           <div

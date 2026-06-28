@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, within } from '@testing-library/react';
+import { render, screen, within, fireEvent } from '@testing-library/react';
 import SingleCityDashboard from '../SingleCityDashboard';
 import { CalculationResult, City } from '@/types';
 
@@ -200,5 +200,115 @@ describe('SingleCityDashboard', () => {
 
     // Verify peak age calculation in the legend
     expect(screen.getByText('Peak: €800K at age 65')).toBeInTheDocument();
+  });
+
+  it('renders the editable input and triggers handleOverride on change', () => {
+    const result: CalculationResult = {
+      ...baseResult,
+      city: mockCityGermany,
+      totalMonthlyNeed: 3000,
+    };
+    const userInputs = {
+      currentAge: 30,
+      retirementAge: 65,
+      currentSavings: 50000,
+      monthlyContribution: 500,
+      baseMonthlyExpense: 3000,
+      cityExpenseOverrides: {},
+    };
+    const onUserInputsChange = jest.fn();
+
+    render(
+      <SingleCityDashboard
+        result={result}
+        userInputs={userInputs}
+        onUserInputsChange={onUserInputsChange}
+      />
+    );
+
+    const input = screen.getByRole('spinbutton');
+    expect(input).toBeInTheDocument();
+    expect(input).toHaveValue(3000);
+
+    fireEvent.change(input, { target: { value: '3500' } });
+
+    expect(onUserInputsChange).toHaveBeenCalledWith({
+      ...userInputs,
+      cityExpenseOverrides: {
+        munich: 3500,
+      },
+    });
+  });
+
+  it('displays red badge (+X% vs average) and reset button when monthly need exceeds standard average', () => {
+    const result: CalculationResult = {
+      ...baseResult,
+      city: mockCityGermany,
+      totalMonthlyNeed: 3600, // standardAvg = 3000 (3000 * 100 / 100) -> +20%
+    };
+    const userInputs = {
+      currentAge: 30,
+      retirementAge: 65,
+      currentSavings: 50000,
+      monthlyContribution: 500,
+      baseMonthlyExpense: 3000,
+      cityExpenseOverrides: { munich: 3600 },
+    };
+    const onUserInputsChange = jest.fn();
+
+    render(
+      <SingleCityDashboard
+        result={result}
+        userInputs={userInputs}
+        onUserInputsChange={onUserInputsChange}
+      />
+    );
+
+    const badge = screen.getByTestId('comparison-badge');
+    expect(badge).toBeInTheDocument();
+    expect(badge).toHaveTextContent('+20% vs average');
+    expect(badge.style.color).toBe('var(--danger)');
+    expect(badge.style.border).toBe('1px solid var(--danger)');
+
+    const resetBtn = screen.getByRole('button', { name: 'Reset to Average' });
+    expect(resetBtn).toBeInTheDocument();
+
+    fireEvent.click(resetBtn);
+
+    expect(onUserInputsChange).toHaveBeenCalledWith({
+      ...userInputs,
+      cityExpenseOverrides: {},
+    });
+  });
+
+  it('displays green badge (-Y% vs average) when monthly need is below standard average', () => {
+    const result: CalculationResult = {
+      ...baseResult,
+      city: mockCityGermany,
+      totalMonthlyNeed: 2400, // standardAvg = 3000 -> -20%
+    };
+    const userInputs = {
+      currentAge: 30,
+      retirementAge: 65,
+      currentSavings: 50000,
+      monthlyContribution: 500,
+      baseMonthlyExpense: 3000,
+      cityExpenseOverrides: { munich: 2400 },
+    };
+    const onUserInputsChange = jest.fn();
+
+    render(
+      <SingleCityDashboard
+        result={result}
+        userInputs={userInputs}
+        onUserInputsChange={onUserInputsChange}
+      />
+    );
+
+    const badge = screen.getByTestId('comparison-badge');
+    expect(badge).toBeInTheDocument();
+    expect(badge).toHaveTextContent('-20% vs average');
+    expect(badge.style.color).toBe('var(--positive)');
+    expect(badge.style.border).toBe('1px solid var(--positive)');
   });
 });

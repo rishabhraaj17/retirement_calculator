@@ -246,7 +246,11 @@ export default function Home() {
                     : selectedCities[0] || null;
                   const activeResult = results.find(r => r.city.name === activeCityName);
                   return activeResult ? (
-                    <SingleCityDashboard result={activeResult} />
+                    <SingleCityDashboard
+                      result={activeResult}
+                      userInputs={userInputs}
+                      onUserInputsChange={setUserInputs}
+                    />
                   ) : null;
                 })()}
               </>
