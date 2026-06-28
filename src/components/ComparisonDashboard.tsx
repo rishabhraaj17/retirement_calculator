@@ -11,10 +11,12 @@ import {
   ResponsiveContainer,
   Legend,
 } from 'recharts';
-import { CalculationResult } from '@/types';
+import { CalculationResult, UserInputs } from '@/types';
 
 interface ComparisonDashboardProps {
   results: CalculationResult[];
+  userInputs?: UserInputs;
+  onUserInputsChange?: (inputs: UserInputs) => void;
 }
 
 const CITY_PALETTE: Record<string, string> = {
@@ -70,7 +72,11 @@ const CustomTooltip = ({ active, payload, label }: any) => {
   );
 };
 
-export default function ComparisonDashboard({ results }: ComparisonDashboardProps) {
+export default function ComparisonDashboard({
+  results,
+  userInputs,
+  onUserInputsChange,
+}: ComparisonDashboardProps) {
   if (results.length === 0) {
     return (
       <div
@@ -152,6 +158,18 @@ export default function ComparisonDashboard({ results }: ComparisonDashboardProp
       </div>
     );
   }
+
+  const handleCellOverride = (cityId: string, val: number) => {
+    if (!userInputs || !onUserInputsChange) return;
+    const updatedOverrides = {
+      ...(userInputs.cityExpenseOverrides || {}),
+      [cityId]: val,
+    };
+    onUserInputsChange({
+      ...userInputs,
+      cityExpenseOverrides: updatedOverrides,
+    });
+  };
 
   const sorted = [...results].sort((a, b) => b.requiredFund - a.requiredFund);
   const highest = sorted[0];
@@ -561,7 +579,28 @@ export default function ComparisonDashboard({ results }: ComparisonDashboardProp
                           whiteSpace: 'nowrap',
                         }}
                       >
-                        {row.danger && val === 0 ? 'Fully Funded' : fmtFull(val)}
+                        {row.key === 'totalMonthlyNeed' && userInputs && onUserInputsChange ? (
+                          <input
+                            type="number"
+                            value={Math.round(val)}
+                            onChange={e => handleCellOverride(result.city.id, parseFloat(e.target.value) || 0)}
+                            style={{
+                              backgroundColor: 'var(--bg-elevated)',
+                              border: '1px solid var(--border-default)',
+                              borderRadius: 'var(--radius-xs)',
+                              color: 'var(--text-primary)',
+                              fontFamily: 'var(--font-mono)',
+                              width: '80px',
+                              padding: '2px 6px',
+                              fontSize: '0.8rem',
+                              textAlign: 'right'
+                            }}
+                          />
+                        ) : row.danger && val === 0 ? (
+                          'Fully Funded'
+                        ) : (
+                          fmtFull(val)
+                        )}
                       </td>
                     );
                   })}

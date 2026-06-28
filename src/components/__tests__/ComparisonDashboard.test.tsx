@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import ComparisonDashboard from '../ComparisonDashboard';
 import { CalculationResult } from '@/types';
 
@@ -110,5 +110,39 @@ describe('ComparisonDashboard', () => {
     expect(screen.getByText(/reduces your required fund by/i)).toBeInTheDocument();
     // Saving = 1,200,000 - 400,000 = 800,000
     expect(screen.getAllByText('€800,000')[0]).toBeInTheDocument();
+  });
+
+  it('renders input elements for Monthly Need and calls onUserInputsChange when value changes', () => {
+    const mockUserInputs = {
+      currentAge: 30,
+      retirementAge: 65,
+      currentSavings: 50000,
+      monthlyContribution: 500,
+      cityExpenseOverrides: {},
+    };
+    const mockOnUserInputsChange = jest.fn();
+
+    render(
+      <ComparisonDashboard
+        results={mockResults}
+        userInputs={mockUserInputs}
+        onUserInputsChange={mockOnUserInputsChange}
+      />
+    );
+
+    const inputs = screen.getAllByRole('spinbutton');
+    expect(inputs).toHaveLength(2); // One for Munich (3000), one for Delhi NCR (1000)
+    expect(inputs[0]).toHaveValue(3000);
+    expect(inputs[1]).toHaveValue(1000);
+
+    // Simulate change on Munich input
+    fireEvent.change(inputs[0], { target: { value: '3500' } });
+
+    expect(mockOnUserInputsChange).toHaveBeenCalledWith({
+      ...mockUserInputs,
+      cityExpenseOverrides: {
+        munich: 3500,
+      },
+    });
   });
 });
