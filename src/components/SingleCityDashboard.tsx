@@ -784,7 +784,7 @@ export default function SingleCityDashboard({
 
           <div
             data-testid="drawdown-area-chart"
-            style={{ flex: 1, width: '100%', height: '100%', minHeight: '220px' }}
+            style={{ width: '100%', height: '260px' }}
           >
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart
@@ -886,7 +886,7 @@ export default function SingleCityDashboard({
           </p>
         </div>
 
-        <div style={{ flex: 1, minHeight: '260px', width: '100%' }}>
+        <div style={{ width: '100%', height: '260px' }}>
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart data={sensitivityData} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
               <defs>
