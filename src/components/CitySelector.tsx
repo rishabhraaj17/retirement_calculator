@@ -1,49 +1,37 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { City, CityName, Country } from '@/types';
 
 interface CitySelectorProps {
+  cities: City[];
   selectedCities: CityName[];
   onSelectionChange: (cities: CityName[]) => void;
+  onAddCity: (newCity: City) => void;
+  error?: string | null;
 }
-
-const staticCities: City[] = [
-  { id: 'munich', name: 'Munich', country: 'Germany', costOfLivingIndex: 100, rentIndex: 88, groceriesIndex: 105, healthcareCostMonthly: 350, taxRate: 0.15 },
-  { id: 'berlin', name: 'Berlin', country: 'Germany', costOfLivingIndex: 82, rentIndex: 68, groceriesIndex: 98, healthcareCostMonthly: 350, taxRate: 0.15 },
-  { id: 'delhi-ncr', name: 'Delhi NCR', country: 'India', costOfLivingIndex: 25, rentIndex: 20, groceriesIndex: 22, healthcareCostMonthly: 150, taxRate: 0.10 },
-  { id: 'mumbai', name: 'Mumbai', country: 'India', costOfLivingIndex: 30, rentIndex: 35, groceriesIndex: 28, healthcareCostMonthly: 200, taxRate: 0.10 },
-  { id: 'bangalore', name: 'Bangalore', country: 'India', costOfLivingIndex: 28, rentIndex: 25, groceriesIndex: 26, healthcareCostMonthly: 180, taxRate: 0.10 },
-];
 
 const countryConfig = {
   Germany: { flag: '🇩🇪', color: 'var(--de-color)', bg: 'var(--de-bg)', shadowColor: 'rgba(80, 144, 212, 0.18)' },
   India: { flag: '🇮🇳', color: 'var(--in-color)', bg: 'var(--in-bg)', shadowColor: 'rgba(212, 112, 80, 0.18)' },
 };
 
-export default function CitySelector({ selectedCities, onSelectionChange }: CitySelectorProps) {
-  const [cities, setCities] = useState<City[]>(staticCities);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    setLoading(true);
-    setError(null);
-    const p = fetch('/data/cities.json');
-    if (p && typeof p.then === 'function') {
-      p.then(r => {
-        if (!r.ok) throw new Error('Network response was not ok');
-        return r.json();
-      })
-      .then(data => setCities(data))
-      .catch(() => {
-        setError('Error loading cities');
-      })
-      .finally(() => setLoading(false));
-    } else {
-      setLoading(false);
-    }
-  }, []);
+export default function CitySelector({
+  cities,
+  selectedCities,
+  onSelectionChange,
+  onAddCity,
+  error,
+}: CitySelectorProps) {
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [cityNameInput, setCityNameInput] = useState('');
+  const [countryInput, setCountryInput] = useState<Country>('Germany');
+  const [colInput, setColInput] = useState(50);
+  const [rentInput, setRentInput] = useState(50);
+  const [groceriesInput, setGroceriesInput] = useState(50);
+  const [healthcareInput, setHealthcareInput] = useState(200);
+  const [taxInput, setTaxInput] = useState(15);
+  const [addError, setAddError] = useState<string | null>(null);
 
   const handleToggle = (cityName: CityName) => {
     onSelectionChange(
@@ -53,21 +41,55 @@ export default function CitySelector({ selectedCities, onSelectionChange }: City
     );
   };
 
+  const handleAddCitySubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setAddError(null);
+
+    const nameTrimmed = cityNameInput.trim();
+    if (!nameTrimmed) {
+      setAddError('Please enter a valid city name');
+      return;
+    }
+
+    const nameExists = cities.some(
+      c => c.name.toLowerCase() === nameTrimmed.toLowerCase()
+    );
+    if (nameExists) {
+      setAddError('A city with this name already exists');
+      return;
+    }
+
+    const newCity: City = {
+      id: nameTrimmed.toLowerCase().replace(/\s+/g, '-'),
+      name: nameTrimmed as CityName,
+      country: countryInput,
+      costOfLivingIndex: colInput,
+      rentIndex: rentInput,
+      groceriesIndex: groceriesInput,
+      healthcareCostMonthly: healthcareInput,
+      taxRate: taxInput / 100,
+    };
+
+    onAddCity(newCity);
+    onSelectionChange([...selectedCities, newCity.name]);
+
+    // Reset inputs
+    setCityNameInput('');
+    setColInput(50);
+    setRentInput(50);
+    setGroceriesInput(50);
+    setHealthcareInput(200);
+    setTaxInput(15);
+    setShowAddForm(false);
+  };
+
   const groupedCities = cities.reduce<Record<Country, City[]>>(
-    (acc, city) => { acc[city.country].push(city); return acc; },
+    (acc, city) => {
+      acc[city.country].push(city);
+      return acc;
+    },
     { Germany: [], India: [] }
   );
-
-  if (loading) {
-    return (
-      <div data-testid="city-selector-loading">
-        <SectionLabel>Select Cities</SectionLabel>
-        <p style={{ color: 'var(--text-muted)', fontSize: '0.75rem', fontFamily: 'var(--font-mono)' }}>
-          Loading…
-        </p>
-      </div>
-    );
-  }
 
   return (
     <div data-testid="city-selector">
@@ -173,6 +195,251 @@ export default function CitySelector({ selectedCities, onSelectionChange }: City
             </div>
           );
         })}
+      </div>
+
+      {/* Add Custom City Collapsible */}
+      <div style={{ marginTop: '20px', borderTop: '1px solid var(--border-subtle)', paddingTop: '16px' }}>
+        <button
+          onClick={() => setShowAddForm(!showAddForm)}
+          style={{
+            background: 'transparent',
+            border: 'none',
+            color: 'var(--accent)',
+            cursor: 'pointer',
+            fontFamily: 'var(--font-mono)',
+            fontSize: '0.68rem',
+            padding: '4px 0',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '4px',
+            outline: 'none',
+          }}
+        >
+          {showAddForm ? '▼ Close Custom City Form' : '▶ Add Custom City'}
+        </button>
+
+        {showAddForm && (
+          <form
+            onSubmit={handleAddCitySubmit}
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '10px',
+              marginTop: '12px',
+              padding: '12px',
+              backgroundColor: 'var(--bg-elevated)',
+              border: '1px solid var(--border-subtle)',
+              borderRadius: 'var(--radius-xs)',
+              animation: 'fadeInUp 0.16s ease',
+            }}
+          >
+            <div>
+              <label htmlFor="custom-city-name" style={{ fontSize: '0.55rem', color: 'var(--text-secondary)', fontFamily: 'var(--font-mono)', display: 'block', marginBottom: '2px', textTransform: 'uppercase' }}>
+                City Name
+              </label>
+              <input
+                id="custom-city-name"
+                type="text"
+                required
+                value={cityNameInput}
+                onChange={e => setCityNameInput(e.target.value)}
+                placeholder="e.g. Frankfurt"
+                style={{
+                  width: '100%',
+                  padding: '6px 8px',
+                  backgroundColor: 'var(--bg-base)',
+                  border: '1px solid var(--border-default)',
+                  borderRadius: 'var(--radius-xs)',
+                  color: 'var(--text-primary)',
+                  fontFamily: 'var(--font-body)',
+                  fontSize: '0.78rem',
+                  outline: 'none',
+                }}
+              />
+            </div>
+
+            <div>
+              <label htmlFor="custom-city-country" style={{ fontSize: '0.55rem', color: 'var(--text-secondary)', fontFamily: 'var(--font-mono)', display: 'block', marginBottom: '2px', textTransform: 'uppercase' }}>
+                Country
+              </label>
+              <select
+                id="custom-city-country"
+                value={countryInput}
+                onChange={e => setCountryInput(e.target.value as Country)}
+                style={{
+                  width: '100%',
+                  padding: '6px 8px',
+                  backgroundColor: 'var(--bg-base)',
+                  border: '1px solid var(--border-default)',
+                  borderRadius: 'var(--radius-xs)',
+                  color: 'var(--text-primary)',
+                  fontFamily: 'var(--font-body)',
+                  fontSize: '0.78rem',
+                  outline: 'none',
+                  cursor: 'pointer',
+                }}
+              >
+                <option value="Germany">Germany</option>
+                <option value="India">India</option>
+              </select>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+              <div>
+                <label htmlFor="custom-city-col" style={{ fontSize: '0.55rem', color: 'var(--text-secondary)', fontFamily: 'var(--font-mono)', display: 'block', marginBottom: '2px', textTransform: 'uppercase' }}>
+                  CoL Index
+                </label>
+                <input
+                  id="custom-city-col"
+                  type="number"
+                  min={1}
+                  max={200}
+                  value={colInput}
+                  onChange={e => setColInput(parseInt(e.target.value) || 0)}
+                  style={{
+                    width: '100%',
+                    padding: '6px 8px',
+                    backgroundColor: 'var(--bg-base)',
+                    border: '1px solid var(--border-default)',
+                    borderRadius: 'var(--radius-xs)',
+                    color: 'var(--text-primary)',
+                    fontFamily: 'var(--font-mono)',
+                    fontSize: '0.78rem',
+                    outline: 'none',
+                  }}
+                />
+              </div>
+              <div>
+                <label htmlFor="custom-city-rent" style={{ fontSize: '0.55rem', color: 'var(--text-secondary)', fontFamily: 'var(--font-mono)', display: 'block', marginBottom: '2px', textTransform: 'uppercase' }}>
+                  Rent Index
+                </label>
+                <input
+                  id="custom-city-rent"
+                  type="number"
+                  min={1}
+                  max={200}
+                  value={rentInput}
+                  onChange={e => setRentInput(parseInt(e.target.value) || 0)}
+                  style={{
+                    width: '100%',
+                    padding: '6px 8px',
+                    backgroundColor: 'var(--bg-base)',
+                    border: '1px solid var(--border-default)',
+                    borderRadius: 'var(--radius-xs)',
+                    color: 'var(--text-primary)',
+                    fontFamily: 'var(--font-mono)',
+                    fontSize: '0.78rem',
+                    outline: 'none',
+                  }}
+                />
+              </div>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+              <div>
+                <label htmlFor="custom-city-groceries" style={{ fontSize: '0.55rem', color: 'var(--text-secondary)', fontFamily: 'var(--font-mono)', display: 'block', marginBottom: '2px', textTransform: 'uppercase' }}>
+                  Groceries Index
+                </label>
+                <input
+                  id="custom-city-groceries"
+                  type="number"
+                  min={1}
+                  max={200}
+                  value={groceriesInput}
+                  onChange={e => setGroceriesInput(parseInt(e.target.value) || 0)}
+                  style={{
+                    width: '100%',
+                    padding: '6px 8px',
+                    backgroundColor: 'var(--bg-base)',
+                    border: '1px solid var(--border-default)',
+                    borderRadius: 'var(--radius-xs)',
+                    color: 'var(--text-primary)',
+                    fontFamily: 'var(--font-mono)',
+                    fontSize: '0.78rem',
+                    outline: 'none',
+                  }}
+                />
+              </div>
+              <div>
+                <label htmlFor="custom-city-tax" style={{ fontSize: '0.55rem', color: 'var(--text-secondary)', fontFamily: 'var(--font-mono)', display: 'block', marginBottom: '2px', textTransform: 'uppercase' }}>
+                  Tax Rate %
+                </label>
+                <input
+                  id="custom-city-tax"
+                  type="number"
+                  min={0}
+                  max={90}
+                  value={taxInput}
+                  onChange={e => setTaxInput(parseInt(e.target.value) || 0)}
+                  style={{
+                    width: '100%',
+                    padding: '6px 8px',
+                    backgroundColor: 'var(--bg-base)',
+                    border: '1px solid var(--border-default)',
+                    borderRadius: 'var(--radius-xs)',
+                    color: 'var(--text-primary)',
+                    fontFamily: 'var(--font-mono)',
+                    fontSize: '0.78rem',
+                    outline: 'none',
+                  }}
+                />
+              </div>
+            </div>
+
+            <div>
+              <label htmlFor="custom-city-healthcare" style={{ fontSize: '0.55rem', color: 'var(--text-secondary)', fontFamily: 'var(--font-mono)', display: 'block', marginBottom: '2px', textTransform: 'uppercase' }}>
+                Monthly Healthcare (€)
+              </label>
+              <input
+                id="custom-city-healthcare"
+                type="number"
+                min={0}
+                max={2000}
+                value={healthcareInput}
+                onChange={e => setHealthcareInput(parseInt(e.target.value) || 0)}
+                style={{
+                  width: '100%',
+                  padding: '6px 8px',
+                  backgroundColor: 'var(--bg-base)',
+                  border: '1px solid var(--border-default)',
+                  borderRadius: 'var(--radius-xs)',
+                  color: 'var(--text-primary)',
+                  fontFamily: 'var(--font-mono)',
+                  fontSize: '0.78rem',
+                  outline: 'none',
+                }}
+              />
+            </div>
+
+            {addError && (
+              <p style={{ color: 'var(--danger)', fontSize: '0.62rem', fontFamily: 'var(--font-mono)' }}>
+                {addError}
+              </p>
+            )}
+
+            <button
+              type="submit"
+              style={{
+                width: '100%',
+                padding: '8px',
+                backgroundColor: 'var(--accent)',
+                color: 'var(--bg-base)',
+                border: 'none',
+                borderRadius: 'var(--radius-xs)',
+                cursor: 'pointer',
+                fontFamily: 'var(--font-mono)',
+                fontSize: '0.72rem',
+                fontWeight: 600,
+                letterSpacing: '0.08em',
+                textTransform: 'uppercase',
+                marginTop: '4px',
+                transition: 'all 0.12s ease',
+              }}
+            >
+              Add Custom City
+            </button>
+          </form>
+        )}
       </div>
     </div>
   );

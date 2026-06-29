@@ -1,139 +1,67 @@
-import { render, screen, waitFor, fireEvent, act } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import CitySelector from '../CitySelector';
-
-// Mock fetch globally
-global.fetch = jest.fn();
+import { City } from '@/types';
 
 describe('CitySelector', () => {
+  const mockCities: City[] = [
+    {
+      id: 'munich',
+      name: 'Munich',
+      country: 'Germany',
+      costOfLivingIndex: 100,
+      rentIndex: 88,
+      groceriesIndex: 105,
+      healthcareCostMonthly: 350,
+      taxRate: 0.15,
+    },
+    {
+      id: 'delhi-ncr',
+      name: 'Delhi NCR',
+      country: 'India',
+      costOfLivingIndex: 25,
+      rentIndex: 20,
+      groceriesIndex: 22,
+      healthcareCostMonthly: 150,
+      taxRate: 0.10,
+    },
+  ];
+
   const mockOnSelectionChange = jest.fn();
+  const mockOnAddCity = jest.fn();
 
   beforeEach(() => {
     jest.clearAllMocks();
-    (global.fetch as jest.Mock).mockReturnValue(new Promise(() => {}));
   });
 
-  it('renders loading state initially', () => {
+  it('renders cities grouped by country and displays CoL index', () => {
     render(
       <CitySelector
+        cities={mockCities}
         selectedCities={[]}
         onSelectionChange={mockOnSelectionChange}
+        onAddCity={mockOnAddCity}
       />
     );
 
-    expect(screen.getByTestId('city-selector-loading')).toBeInTheDocument();
-  });
-
-  it('renders cities grouped by country after successful fetch', async () => {
-    const mockCities = [
-      {
-        id: 'munich',
-        name: 'Munich',
-        country: 'Germany',
-        costOfLivingIndex: 100,
-        rentIndex: 88,
-        groceriesIndex: 105,
-        healthcareCostMonthly: 350,
-        taxRate: 0.15,
-      },
-      {
-        id: 'berlin',
-        name: 'Berlin',
-        country: 'Germany',
-        costOfLivingIndex: 82,
-        rentIndex: 68,
-        groceriesIndex: 98,
-        healthcareCostMonthly: 350,
-        taxRate: 0.15,
-      },
-      {
-        id: 'delhi-ncr',
-        name: 'Delhi NCR',
-        country: 'India',
-        costOfLivingIndex: 25,
-        rentIndex: 20,
-        groceriesIndex: 22,
-        healthcareCostMonthly: 150,
-        taxRate: 0.10,
-      },
-      {
-        id: 'mumbai',
-        name: 'Mumbai',
-        country: 'India',
-        costOfLivingIndex: 30,
-        rentIndex: 35,
-        groceriesIndex: 28,
-        healthcareCostMonthly: 200,
-        taxRate: 0.10,
-      },
-      {
-        id: 'bangalore',
-        name: 'Bangalore',
-        country: 'India',
-        costOfLivingIndex: 28,
-        rentIndex: 25,
-        groceriesIndex: 26,
-        healthcareCostMonthly: 180,
-        taxRate: 0.10,
-      },
-    ];
-
-    (fetch as jest.Mock).mockResolvedValueOnce({
-      ok: true,
-      json: async () => mockCities,
-    });
-
-    render(
-      <CitySelector
-        selectedCities={[]}
-        onSelectionChange={mockOnSelectionChange}
-      />
-    );
-
-    await waitFor(() => {
-      expect(screen.getByTestId('city-selector')).toBeInTheDocument();
-    });
-
-    // Check for country group headers
+    expect(screen.getByTestId('city-selector')).toBeInTheDocument();
     expect(screen.getByText('Germany')).toBeInTheDocument();
     expect(screen.getByText('India')).toBeInTheDocument();
 
-    // Check for city checkboxes
     expect(screen.getByTestId('checkbox-munich')).toBeInTheDocument();
-    expect(screen.getByTestId('checkbox-berlin')).toBeInTheDocument();
     expect(screen.getByTestId('checkbox-delhi-ncr')).toBeInTheDocument();
-    expect(screen.getByTestId('checkbox-mumbai')).toBeInTheDocument();
-    expect(screen.getByTestId('checkbox-bangalore')).toBeInTheDocument();
+    expect(screen.getByText(/CoL 100/i)).toBeInTheDocument();
+    expect(screen.getByText(/CoL 25/i)).toBeInTheDocument();
   });
 
-  it('calls onSelectionChange when a city is selected', async () => {
-    const mockCities = [
-      {
-        id: 'munich',
-        name: 'Munich',
-        country: 'Germany',
-        costOfLivingIndex: 100,
-        rentIndex: 88,
-        groceriesIndex: 105,
-        healthcareCostMonthly: 350,
-        taxRate: 0.15,
-      },
-    ];
-
-    (fetch as jest.Mock).mockResolvedValueOnce({
-      ok: true,
-      json: async () => mockCities,
-    });
-
+  it('calls onSelectionChange when a city is selected', () => {
     render(
       <CitySelector
+        cities={mockCities}
         selectedCities={[]}
         onSelectionChange={mockOnSelectionChange}
+        onAddCity={mockOnAddCity}
       />
     );
-
-    await waitFor(() => {
-      expect(screen.getByTestId('city-selector')).toBeInTheDocument();
-    });
 
     const checkbox = screen.getByTestId('checkbox-munich');
     fireEvent.click(checkbox);
@@ -141,90 +69,76 @@ describe('CitySelector', () => {
     expect(mockOnSelectionChange).toHaveBeenCalledWith(['Munich']);
   });
 
-  it('calls onSelectionChange when a city is deselected', async () => {
-    const mockCities = [
-      {
-        id: 'munich',
-        name: 'Munich',
-        country: 'Germany',
-        costOfLivingIndex: 100,
-        rentIndex: 88,
-        groceriesIndex: 105,
-        healthcareCostMonthly: 350,
-        taxRate: 0.15,
-      },
-    ];
-
-    (fetch as jest.Mock).mockResolvedValueOnce({
-      ok: true,
-      json: async () => mockCities,
-    });
-
+  it('calls onSelectionChange when a city is deselected', () => {
     render(
       <CitySelector
+        cities={mockCities}
         selectedCities={['Munich']}
         onSelectionChange={mockOnSelectionChange}
+        onAddCity={mockOnAddCity}
       />
     );
 
-    await waitFor(() => {
-      expect(screen.getByTestId('city-selector')).toBeInTheDocument();
-    });
-
     const checkbox = screen.getByTestId('checkbox-munich');
-    expect(checkbox).toHaveStyle('background-color: var(--de-bg)');
-
     fireEvent.click(checkbox);
 
     expect(mockOnSelectionChange).toHaveBeenCalledWith([]);
   });
 
-  it('shows error state when fetch fails and uses fallback data', async () => {
-    (fetch as jest.Mock).mockRejectedValueOnce(new Error('Network error'));
-
+  it('shows error state when error prop is provided', () => {
     render(
       <CitySelector
+        cities={mockCities}
         selectedCities={[]}
         onSelectionChange={mockOnSelectionChange}
+        onAddCity={mockOnAddCity}
+        error="Error loading cities"
       />
     );
 
-    // Wait for the async error handling to complete
-    await waitFor(() => {
-      expect(screen.getByTestId('city-selector-error')).toBeInTheDocument();
-    });
-
+    expect(screen.getByTestId('city-selector-error')).toBeInTheDocument();
     expect(screen.getByText(/Error loading cities/i)).toBeInTheDocument();
   });
 
-  it('displays cost of living index for each city', async () => {
-    const mockCities = [
-      {
-        id: 'munich',
-        name: 'Munich',
-        country: 'Germany',
-        costOfLivingIndex: 100,
-        rentIndex: 88,
-        groceriesIndex: 105,
-        healthcareCostMonthly: 350,
-        taxRate: 0.15,
-      },
-    ];
-
-    (fetch as jest.Mock).mockResolvedValueOnce({
-      ok: true,
-      json: async () => mockCities,
-    });
-
+  it('handles adding custom cities through the form', () => {
     render(
       <CitySelector
+        cities={mockCities}
         selectedCities={[]}
         onSelectionChange={mockOnSelectionChange}
+        onAddCity={mockOnAddCity}
       />
     );
 
-    await waitFor(() => {
-      expect(screen.getByText(/CoL 100/i)).toBeInTheDocument();
+    expect(screen.queryByPlaceholderText('e.g. Frankfurt')).not.toBeInTheDocument();
+
+    const toggleBtn = screen.getByText('▶ Add Custom City');
+    fireEvent.click(toggleBtn);
+
+    expect(screen.getByPlaceholderText('e.g. Frankfurt')).toBeInTheDocument();
+
+    // Fill form
+    fireEvent.change(screen.getByPlaceholderText('e.g. Frankfurt'), { target: { value: 'Frankfurt' } });
+    fireEvent.change(screen.getByLabelText(/CoL Index/i), { target: { value: '90' } });
+    fireEvent.change(screen.getByLabelText(/Rent Index/i), { target: { value: '75' } });
+    fireEvent.change(screen.getByLabelText(/Groceries Index/i), { target: { value: '95' } });
+    fireEvent.change(screen.getByLabelText(/Tax Rate %/i), { target: { value: '18' } });
+    fireEvent.change(screen.getByLabelText(/Monthly Healthcare/i), { target: { value: '380' } });
+
+    const submitBtn = screen.getByRole('button', { name: 'Add Custom City' });
+    fireEvent.click(submitBtn);
+
+    expect(mockOnAddCity).toHaveBeenCalledWith({
+      id: 'frankfurt',
+      name: 'Frankfurt',
+      country: 'Germany',
+      costOfLivingIndex: 90,
+      rentIndex: 75,
+      groceriesIndex: 95,
+      healthcareCostMonthly: 380,
+      taxRate: 0.18,
     });
+
+    expect(mockOnSelectionChange).toHaveBeenCalledWith(['Frankfurt']);
   });
 });

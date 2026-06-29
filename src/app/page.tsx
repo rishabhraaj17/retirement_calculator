@@ -49,6 +49,7 @@ export default function Home() {
   const [userInputs, setUserInputs] = useState<UserInputs>(defaultUserInputs);
   const [assumptions, setAssumptions] = useState<Assumptions>(defaultAssumptions);
   const [results, setResults] = useState<CalculationResult[]>([]);
+  const [error, setError] = useState<string | null>(null);
   
   // Tab view state: 'single' | 'compare'
   const [viewTab, setViewTab] = useState<'single' | 'compare'>('single');
@@ -57,9 +58,14 @@ export default function Home() {
 
   useEffect(() => {
     fetch('/data/cities.json')
-      .then(r => r.json())
+      .then(r => {
+        if (!r.ok) throw new Error('Failed to load');
+        return r.json();
+      })
       .then(setCities)
-      .catch(() => {});
+      .catch(() => {
+        setError('Error loading cities');
+      });
   }, []);
 
   // Manage viewTab default and selectedCityForSingle when selectedCities changes
@@ -106,8 +112,11 @@ export default function Home() {
       >
         <div style={{ padding: '24px 22px', flex: 1 }}>
           <CitySelector
+            cities={cities}
             selectedCities={selectedCities}
             onSelectionChange={setSelectedCities}
+            onAddCity={(newCity) => setCities(prev => [...prev, newCity])}
+            error={error}
           />
 
           <div
