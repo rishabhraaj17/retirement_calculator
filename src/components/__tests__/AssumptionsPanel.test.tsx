@@ -17,6 +17,10 @@ describe('AssumptionsPanel', () => {
       Germany: 0.06,
       India: 0.03,
     },
+    countryInvestmentReturn: {
+      Germany: 0.07,
+      India: 0.09,
+    }
   };
 
   const mockOnRefresh = jest.fn();
@@ -26,7 +30,7 @@ describe('AssumptionsPanel', () => {
     jest.clearAllMocks();
   });
 
-  it('renders with default country inflation rates if undefined', () => {
+  it('renders with default country inflation and return rates if undefined', () => {
     render(
       <AssumptionsPanel
         assumptions={mockAssumptions}
@@ -35,19 +39,20 @@ describe('AssumptionsPanel', () => {
       />
     );
 
-    expect(screen.getByText('Inflation Benchmarks')).toBeInTheDocument();
+    expect(screen.getByText('Country Benchmarks')).toBeInTheDocument();
     
-    const germanyInput = screen.getByTestId('input-inflation-germany') as HTMLInputElement;
-    const indiaInput = screen.getByTestId('input-inflation-india') as HTMLInputElement;
+    const germanyInf = screen.getByTestId('input-inflation-germany') as HTMLInputElement;
+    const germanyRet = screen.getByTestId('input-return-germany') as HTMLInputElement;
+    const indiaInf = screen.getByTestId('input-inflation-india') as HTMLInputElement;
+    const indiaRet = screen.getByTestId('input-return-india') as HTMLInputElement;
     
-    expect(germanyInput).toBeInTheDocument();
-    expect(germanyInput.value).toBe('5'); // Default is 0.05 (5%)
-    
-    expect(indiaInput).toBeInTheDocument();
-    expect(indiaInput.value).toBe('4'); // Default is 0.04 (4%)
+    expect(germanyInf.value).toBe('5'); // Default is 5%
+    expect(germanyRet.value).toBe('6'); // Default is 6%
+    expect(indiaInf.value).toBe('4'); // Default is 4%
+    expect(indiaRet.value).toBe('8'); // Default is 8%
   });
 
-  it('renders with overridden country inflation rates if provided', () => {
+  it('renders with overridden country inflation and return rates if provided', () => {
     render(
       <AssumptionsPanel
         assumptions={mockAssumptionsWithOverrides}
@@ -56,14 +61,14 @@ describe('AssumptionsPanel', () => {
       />
     );
 
-    const germanyInput = screen.getByTestId('input-inflation-germany') as HTMLInputElement;
-    const indiaInput = screen.getByTestId('input-inflation-india') as HTMLInputElement;
+    const germanyInf = screen.getByTestId('input-inflation-germany') as HTMLInputElement;
+    const germanyRet = screen.getByTestId('input-return-germany') as HTMLInputElement;
     
-    expect(germanyInput.value).toBe('6');
-    expect(indiaInput.value).toBe('3');
+    expect(germanyInf.value).toBe('6');
+    expect(germanyRet.value).toBe('7');
   });
 
-  it('calls onAssumptionsChange when Germany rate changes', () => {
+  it('calls onAssumptionsChange when Germany inflation rate changes', () => {
     render(
       <AssumptionsPanel
         assumptions={mockAssumptions}
@@ -79,12 +84,33 @@ describe('AssumptionsPanel', () => {
       ...mockAssumptions,
       countryInflation: {
         Germany: 0.045,
-        India: 0.04, // Default India remains unchanged
+        India: 0.04,
       },
     });
   });
 
-  it('calls onAssumptionsChange when India rate changes', () => {
+  it('calls onAssumptionsChange when Germany investment return changes', () => {
+    render(
+      <AssumptionsPanel
+        assumptions={mockAssumptions}
+        onRefresh={mockOnRefresh}
+        onAssumptionsChange={mockOnAssumptionsChange}
+      />
+    );
+
+    const germanyInput = screen.getByTestId('input-return-germany');
+    fireEvent.change(germanyInput, { target: { value: '7.5' } });
+
+    expect(mockOnAssumptionsChange).toHaveBeenCalledWith({
+      ...mockAssumptions,
+      countryInvestmentReturn: {
+        Germany: 0.075,
+        India: 0.08,
+      },
+    });
+  });
+
+  it('calls onAssumptionsChange when India inflation rate changes', () => {
     render(
       <AssumptionsPanel
         assumptions={mockAssumptionsWithOverrides}
@@ -99,7 +125,7 @@ describe('AssumptionsPanel', () => {
     expect(mockOnAssumptionsChange).toHaveBeenCalledWith({
       ...mockAssumptionsWithOverrides,
       countryInflation: {
-        Germany: 0.06, // Overridden Germany remains unchanged
+        Germany: 0.06,
         India: 0.042,
       },
     });
@@ -142,7 +168,6 @@ describe('AssumptionsPanel', () => {
     fireEvent.click(refreshButton);
     expect(screen.getByText('Refreshing…')).toBeInTheDocument();
     
-    // Fast-forward timer by 1000ms
     act(() => {
       jest.advanceTimersByTime(1000);
     });

@@ -9,6 +9,25 @@ interface AssumptionsPanelProps {
   onAssumptionsChange: (assumptions: Assumptions) => void;
 }
 
+export function HelpIcon({ text }: { text: string }) {
+  return (
+    <span
+      className="tooltip-trigger"
+      style={{
+        cursor: 'help',
+        marginLeft: '4px',
+        opacity: 0.6,
+        fontSize: '0.72rem',
+        position: 'relative',
+        display: 'inline-block'
+      }}
+    >
+      ⓘ
+      <span className="tooltip-content">{text}</span>
+    </span>
+  );
+}
+
 export default function AssumptionsPanel({
   assumptions,
   onRefresh,
@@ -22,6 +41,11 @@ export default function AssumptionsPanel({
     India: 0.04,
   };
 
+  const countryInvestmentReturn = assumptions.countryInvestmentReturn || {
+    Germany: 0.06,
+    India: 0.08,
+  };
+
   const handleRefresh = async () => {
     setIsRefreshing(true);
     await new Promise(r => setTimeout(r, 1000));
@@ -29,15 +53,28 @@ export default function AssumptionsPanel({
     setIsRefreshing(false);
   };
 
-  const handleRateChange = (country: 'Germany' | 'India', newRate: number) => {
-    const updatedCountryInflation = {
-      ...countryInflation,
-      [country]: newRate,
-    };
-    onAssumptionsChange({
-      ...assumptions,
-      countryInflation: updatedCountryInflation,
-    });
+  const handleAssumptionsChange = (
+    country: 'Germany' | 'India',
+    field: 'inflation' | 'return',
+    newVal: number
+  ) => {
+    if (field === 'inflation') {
+      onAssumptionsChange({
+        ...assumptions,
+        countryInflation: {
+          ...countryInflation,
+          [country]: newVal,
+        },
+      });
+    } else {
+      onAssumptionsChange({
+        ...assumptions,
+        countryInvestmentReturn: {
+          ...countryInvestmentReturn,
+          [country]: newVal,
+        },
+      });
+    }
   };
 
   return (
@@ -49,33 +86,40 @@ export default function AssumptionsPanel({
           textTransform: 'uppercase',
           color: 'var(--text-muted)',
           fontFamily: 'var(--font-mono)',
+          display: 'flex',
+          alignItems: 'center',
         }}
       >
-        Inflation Benchmarks
+        <span>Country Benchmarks</span>
+        <HelpIcon text="Country-specific economic assumptions. India typically features higher average inflation alongside higher investment yields compared to Germany." />
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-        <InflationCard
+        <CountryBenchmarkCard
           flag="🇩🇪"
           label="Germany"
-          rate={countryInflation.Germany}
+          inflationRate={countryInflation.Germany}
+          onInflationChange={(val) => handleAssumptionsChange('Germany', 'inflation', val)}
+          returnRate={countryInvestmentReturn.Germany}
+          onReturnChange={(val) => handleAssumptionsChange('Germany', 'return', val)}
           color="var(--de-color)"
           bg="var(--de-bg)"
           source="Eurostat"
-          testId="inflation-source-germany"
-          inputTestId="input-inflation-germany"
-          onRateChange={(newRate) => handleRateChange('Germany', newRate)}
+          inflationTestId="input-inflation-germany"
+          returnTestId="input-return-germany"
         />
-        <InflationCard
+        <CountryBenchmarkCard
           flag="🇮🇳"
           label="India"
-          rate={countryInflation.India}
+          inflationRate={countryInflation.India}
+          onInflationChange={(val) => handleAssumptionsChange('India', 'inflation', val)}
+          returnRate={countryInvestmentReturn.India}
+          onReturnChange={(val) => handleAssumptionsChange('India', 'return', val)}
           color="var(--in-color)"
           bg="var(--in-bg)"
           source="RBI"
-          testId="inflation-source-india"
-          inputTestId="input-inflation-india"
-          onRateChange={(newRate) => handleRateChange('India', newRate)}
+          inflationTestId="input-inflation-india"
+          returnTestId="input-return-india"
         />
       </div>
 
@@ -139,51 +183,73 @@ export default function AssumptionsPanel({
   );
 }
 
-function InflationCard({
+function CountryBenchmarkCard({
   flag,
   label,
-  rate,
+  inflationRate,
+  onInflationChange,
+  returnRate,
+  onReturnChange,
   color,
   bg,
   source,
-  testId,
-  inputTestId,
-  onRateChange,
+  inflationTestId,
+  returnTestId,
 }: {
   flag: string;
   label: string;
-  rate: number;
+  inflationRate: number;
+  onInflationChange: (newRate: number) => void;
+  returnRate: number;
+  onReturnChange: (newRate: number) => void;
   color: string;
   bg: string;
   source: string;
-  testId: string;
-  inputTestId: string;
-  onRateChange: (newRate: number) => void;
+  inflationTestId: string;
+  returnTestId: string;
 }) {
   const formatRateStr = (r: number) => Number((r * 100).toFixed(1)).toString();
-  const [localVal, setLocalVal] = useState(formatRateStr(rate));
+  const [localInf, setLocalInf] = useState(formatRateStr(inflationRate));
+  const [localRet, setLocalRet] = useState(formatRateStr(returnRate));
 
   useEffect(() => {
-    const propNum = parseFloat(formatRateStr(rate));
-    const localNum = parseFloat(localVal);
+    const propNum = parseFloat(formatRateStr(inflationRate));
+    const localNum = parseFloat(localInf);
     if (propNum !== localNum && !isNaN(propNum)) {
-      setLocalVal(formatRateStr(rate));
+      setLocalInf(formatRateStr(inflationRate));
     }
-  }, [rate]);
+  }, [inflationRate]);
 
-  const handleChange = (valStr: string) => {
-    setLocalVal(valStr);
+  useEffect(() => {
+    const propNum = parseFloat(formatRateStr(returnRate));
+    const localNum = parseFloat(localRet);
+    if (propNum !== localNum && !isNaN(propNum)) {
+      setLocalRet(formatRateStr(returnRate));
+    }
+  }, [returnRate]);
+
+  const handleInfChange = (valStr: string) => {
+    setLocalInf(valStr);
     const parsed = parseFloat(valStr);
-    onRateChange(!isNaN(parsed) ? parsed / 100 : 0);
+    onInflationChange(!isNaN(parsed) ? parsed / 100 : 0);
+  };
+
+  const handleRetChange = (valStr: string) => {
+    setLocalRet(valStr);
+    const parsed = parseFloat(valStr);
+    onReturnChange(!isNaN(parsed) ? parsed / 100 : 0);
   };
 
   return (
     <div
       style={{
-        padding: '12px 13px',
+        padding: '14px 16px',
         borderRadius: 'var(--radius-xs)',
         border: '1px solid var(--border-subtle)',
         backgroundColor: bg,
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '12px',
       }}
     >
       <div
@@ -193,7 +259,6 @@ function InflationCard({
           color,
           letterSpacing: '0.12em',
           textTransform: 'uppercase',
-          marginBottom: '6px',
           opacity: 0.7,
           display: 'flex',
           alignItems: 'center',
@@ -203,42 +268,67 @@ function InflationCard({
         <span>{flag}</span>
         <span>{label}</span>
       </div>
-      <div
-        style={{
-          fontSize: '1.35rem',
-          fontFamily: 'var(--font-mono)',
-          color,
-          fontWeight: 500,
-          lineHeight: 1.2,
-          marginBottom: '4px',
-        }}
-      >
-        <input
-          data-testid={inputTestId}
-          type="number"
-          value={localVal}
-          onChange={e => handleChange(e.target.value)}
-          step="0.1"
-          style={{
-            background: 'transparent',
-            border: 'none',
-            borderBottom: '1px dashed var(--accent)',
-            color: 'inherit',
-            fontSize: '1.35rem',
-            fontFamily: 'var(--font-mono)',
-            width: '80px',
-            outline: 'none',
-          }}
-        />
-        %
+
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+        <div>
+          <label style={{ fontSize: '0.52rem', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)', display: 'block', marginBottom: '2px', textTransform: 'uppercase' }}>
+            Inflation
+          </label>
+          <div style={{ fontSize: '1.25rem', fontFamily: 'var(--font-mono)', color, fontWeight: 500, display: 'flex', alignItems: 'center' }}>
+            <input
+              data-testid={inflationTestId}
+              type="number"
+              value={localInf}
+              onChange={e => handleInfChange(e.target.value)}
+              step="0.1"
+              style={{
+                background: 'transparent',
+                border: 'none',
+                borderBottom: '1px dashed var(--accent)',
+                color: 'inherit',
+                fontSize: '1.25rem',
+                fontFamily: 'var(--font-mono)',
+                width: '55px',
+                outline: 'none',
+              }}
+            />
+            <span>%</span>
+          </div>
+        </div>
+
+        <div>
+          <label style={{ fontSize: '0.52rem', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)', display: 'block', marginBottom: '2px', textTransform: 'uppercase' }}>
+            Return
+          </label>
+          <div style={{ fontSize: '1.25rem', fontFamily: 'var(--font-mono)', color, fontWeight: 500, display: 'flex', alignItems: 'center' }}>
+            <input
+              data-testid={returnTestId}
+              type="number"
+              value={localRet}
+              onChange={e => handleRetChange(e.target.value)}
+              step="0.1"
+              style={{
+                background: 'transparent',
+                border: 'none',
+                borderBottom: '1px dashed var(--accent)',
+                color: 'inherit',
+                fontSize: '1.25rem',
+                fontFamily: 'var(--font-mono)',
+                width: '55px',
+                outline: 'none',
+              }}
+            />
+            <span>%</span>
+          </div>
+        </div>
       </div>
+
       <div
         style={{
-          fontSize: '0.58rem',
+          fontSize: '0.55rem',
           color: 'var(--text-muted)',
           fontFamily: 'var(--font-mono)',
         }}
-        data-testid={testId}
       >
         {source} default
       </div>
