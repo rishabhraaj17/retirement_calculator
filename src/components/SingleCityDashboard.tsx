@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   ResponsiveContainer,
   PieChart,
@@ -11,13 +11,75 @@ import {
   CartesianGrid,
   Tooltip,
 } from 'recharts';
-import { CalculationResult, UserInputs, City } from '@/types';
+import { CalculationResult, UserInputs, City, Assumptions } from '@/types';
+import { calculateRetirementFund } from '@/lib/calculator';
 
 interface SingleCityDashboardProps {
   result: CalculationResult;
   userInputs?: UserInputs;
   onUserInputsChange?: (inputs: UserInputs) => void;
   onCityChange?: (city: City) => void;
+  assumptions?: Assumptions;
+}
+
+const DEFAULT_ASSUMPTIONS: Assumptions = {
+  investmentReturn: 0.06,
+  inflationRate: 0.02,
+  retirementYears: 20,
+  countryInflation: { Germany: 0.02, India: 0.05 },
+  countryInvestmentReturn: { Germany: 0.06, India: 0.08 },
+};
+
+function SmartNumericInput({
+  value,
+  onChange,
+  disabled,
+  style,
+  placeholder,
+  dataTestId,
+}: {
+  value: number;
+  onChange: (val: number) => void;
+  disabled?: boolean;
+  style?: React.CSSProperties;
+  placeholder?: string;
+  dataTestId?: string;
+}) {
+  const [localVal, setLocalVal] = useState<string>(Math.round(value).toString());
+
+  useEffect(() => {
+    const parsedLocal = parseFloat(localVal);
+    const roundedProp = Math.round(value);
+    if (parsedLocal !== roundedProp && !isNaN(roundedProp)) {
+      setLocalVal(roundedProp.toString());
+    }
+  }, [value]);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const valStr = e.target.value;
+    setLocalVal(valStr);
+    const parsed = parseFloat(valStr);
+    onChange(!isNaN(parsed) ? parsed : 0);
+  };
+
+  const handleBlur = () => {
+    if (localVal === '' || isNaN(parseFloat(localVal))) {
+      setLocalVal(Math.round(value).toString());
+    }
+  };
+
+  return (
+    <input
+      type="number"
+      data-testid={dataTestId}
+      value={localVal}
+      onChange={handleChange}
+      onBlur={handleBlur}
+      disabled={disabled}
+      placeholder={placeholder}
+      style={style}
+    />
+  );
 }
 
 function fmtShort(v: number): string {
@@ -47,6 +109,7 @@ export default function SingleCityDashboard({
   userInputs,
   onUserInputsChange,
   onCityChange,
+  assumptions,
 }: SingleCityDashboardProps) {
   if (!result) return null;
 
@@ -136,6 +199,48 @@ export default function SingleCityDashboard({
     { key: 'healthcare', name: 'Healthcare', value: Math.round(breakdown.healthcare), color: EXPENSE_PALETTE.healthcare },
     { key: 'others', name: 'Others', value: Math.round(breakdown.other), color: EXPENSE_PALETTE.other },
   ];
+
+  // Prepare compounding sensitivity analysis data
+  const baseContribution = userInputs?.monthlyContribution ?? 500;
+  const currentAssumptions = assumptions || DEFAULT_ASSUMPTIONS;
+  
+  // Generate scenarios around current monthly contribution
+  const contributionScenarios = [
+    0,
+    Math.round(baseContribution * 0.5),
+    Math.round(baseContribution),
+    Math.round(baseContribution * 1.5),
+    Math.round(baseContribution * 2.0),
+    Math.round(baseContribution * 2.5),
+    Math.round(baseContribution * 3.0),
+  ].filter((v, i, self) => self.indexOf(v) === i && v >= 0).sort((a, b) => a - b);
+
+  // If scenarios is too narrow (e.g. contribution is 0), expand to defaults
+  const scenarios = contributionScenarios.length > 2
+    ? contributionScenarios
+    : [0, 250, 500, 750, 1000, 1250, 1500];
+
+  const sensitivityData = scenarios.map(c => {
+    const tempInputs = {
+      currentAge: userInputs?.currentAge ?? 30,
+      retirementAge: userInputs?.retirementAge ?? 65,
+      currentSavings: userInputs?.currentSavings ?? 50000,
+      monthlyContribution: c,
+      baseMonthlyExpense: userInputs?.baseMonthlyExpense,
+      baseRent: userInputs?.baseRent,
+      baseGroceries: userInputs?.baseGroceries,
+      baseOthers: userInputs?.baseOthers,
+      baseHealthcare: userInputs?.baseHealthcare,
+      cityExpenseOverrides: userInputs?.cityExpenseOverrides,
+      cityCategoryOverrides: userInputs?.cityCategoryOverrides,
+    };
+    const calcRes = calculateRetirementFund(city, tempInputs, currentAssumptions);
+    return {
+      contribution: c,
+      projected: Math.round(calcRes.projectedFund),
+      required: Math.round(calcRes.requiredFund),
+    };
+  });
 
   // Custom tooltips
   const renderPieTooltip = ({ active, payload }: any) => {
@@ -495,11 +600,10 @@ export default function SingleCityDashboard({
               <span style={{ fontSize: '0.62rem', color: 'var(--text-secondary)', fontFamily: 'var(--font-mono)', letterSpacing: '0.04em' }}>
                 TOTAL BUDGET: €
               </span>
-              <input
-                data-testid="total-monthly-need-input"
-                type="number"
-                value={Math.round(totalMonthlyNeed)}
-                onChange={e => handleOverride(parseFloat(e.target.value) || 0)}
+              <SmartNumericInput
+                dataTestId="total-monthly-need-input"
+                value={totalMonthlyNeed}
+                onChange={handleOverride}
                 disabled={!onUserInputsChange}
                 style={{
                   backgroundColor: 'var(--bg-elevated)',
@@ -509,7 +613,8 @@ export default function SingleCityDashboard({
                   fontFamily: 'var(--font-mono)',
                   width: '100px',
                   padding: '4px 8px',
-                  fontSize: '0.85rem'
+                  fontSize: '0.85rem',
+                  outline: 'none'
                 }}
               />
               <span style={{ fontSize: '0.62rem', color: 'var(--text-secondary)', fontFamily: 'var(--font-mono)', letterSpacing: '0.04em' }}>
@@ -619,11 +724,10 @@ export default function SingleCityDashboard({
                       {item.name}
                     </span>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                      <input
-                        type="number"
-                        value={isDeHealthcare ? 0 : Math.round(item.value)}
+                      <SmartNumericInput
+                        value={isDeHealthcare ? 0 : item.value}
                         disabled={isDeHealthcare || !onUserInputsChange}
-                        onChange={e => handleCategoryChange(item.key, parseFloat(e.target.value) || 0)}
+                        onChange={val => handleCategoryChange(item.key, val)}
                         style={{
                           backgroundColor: 'var(--bg-elevated)',
                           border: '1px solid var(--border-default)',
@@ -751,6 +855,140 @@ export default function SingleCityDashboard({
         </div>
       </div>
 
+      {/* Savings Compounding Sensitivity */}
+      <div
+        style={{
+          padding: '20px',
+          borderRadius: 'var(--radius)',
+          border: '1px solid var(--border-subtle)',
+          backgroundColor: 'var(--bg-surface)',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '16px',
+          minHeight: '380px',
+        }}
+      >
+        <div>
+          <h3
+            style={{
+              fontFamily: 'var(--font-display)',
+              fontSize: '1.25rem',
+              fontStyle: 'italic',
+              fontWeight: 400,
+              color: 'var(--text-primary)',
+              marginBottom: '4px',
+            }}
+          >
+            Compounding & Savings Sensitivity Analysis
+          </h3>
+          <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>
+            Projected corpus at retirement age ({userInputs?.retirementAge ?? 65}) vs Required Corpus based on different monthly contributions
+          </p>
+        </div>
+
+        <div style={{ flex: 1, minHeight: '260px', width: '100%' }}>
+          <ResponsiveContainer width="100%" height="100%">
+            <AreaChart data={sensitivityData} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
+              <defs>
+                <linearGradient id="colorProjectedSens" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="var(--positive)" stopOpacity={0.16} />
+                  <stop offset="95%" stopColor="var(--positive)" stopOpacity={0.0} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="none" stroke="var(--border-subtle)" vertical={false} />
+              <XAxis
+                dataKey="contribution"
+                tickFormatter={v => `€${v}`}
+                stroke="var(--text-muted)"
+                fontSize={10}
+                fontFamily="var(--font-mono)"
+                tickLine={false}
+                axisLine={false}
+              />
+              <YAxis
+                stroke="var(--text-muted)"
+                fontSize={10}
+                fontFamily="var(--font-mono)"
+                tickLine={false}
+                axisLine={false}
+                tickFormatter={fmtShort}
+              />
+              <Tooltip
+                content={({ active, payload }: any) => {
+                  if (!active || !payload?.length) return null;
+                  const data = payload[0].payload;
+                  return (
+                    <div
+                      style={{
+                        backgroundColor: 'var(--bg-elevated)',
+                        border: '1px solid var(--border-default)',
+                        borderRadius: 'var(--radius-sm)',
+                        padding: '10px 14px',
+                        fontFamily: 'var(--font-mono)',
+                      }}
+                    >
+                      <p style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '6px' }}>
+                        SIP: €{data.contribution}/mo
+                      </p>
+                      <p style={{ fontSize: '0.68rem', color: 'var(--positive)', marginBottom: '3px' }}>
+                        Projected: {fmtFull(data.projected)}
+                      </p>
+                      <p style={{ fontSize: '0.68rem', color: 'var(--accent-light)' }}>
+                        Required: {fmtFull(data.required)}
+                      </p>
+                    </div>
+                  );
+                }}
+                cursor={{ stroke: 'var(--border-strong)', strokeWidth: 1 }}
+              />
+              <Area
+                type="monotone"
+                dataKey="projected"
+                stroke="var(--positive)"
+                strokeWidth={2}
+                fillOpacity={1}
+                fill="url(#colorProjectedSens)"
+              />
+              <Area
+                type="monotone"
+                dataKey="required"
+                stroke="var(--accent)"
+                strokeWidth={1.5}
+                strokeDasharray="4 4"
+                fill="none"
+              />
+            </AreaChart>
+          </ResponsiveContainer>
+        </div>
+
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            paddingTop: '12px',
+            borderTop: '1px solid var(--border-subtle)',
+            fontSize: '0.62rem',
+            fontFamily: 'var(--font-mono)',
+            color: 'var(--text-secondary)',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: 'var(--positive)' }} />
+              <span>Projected Corpus</span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <div style={{ width: '8px', height: '2px', backgroundColor: 'var(--accent)', borderBottom: '1.5px dashed var(--accent)' }} />
+              <span>Required Corpus Target</span>
+            </div>
+          </div>
+          <div>
+            <span>Current Contribution: €{userInputs?.monthlyContribution ?? 500}/mo</span>
+          </div>
+        </div>
+      </div>
+
       {/* Collapsible City Indices & Parameters */}
       <div
         style={{
@@ -802,10 +1040,9 @@ export default function SingleCityDashboard({
               <label style={{ fontSize: '0.62rem', color: 'var(--text-secondary)', fontFamily: 'var(--font-mono)', display: 'block', marginBottom: '4px', textTransform: 'uppercase' }}>
                 Cost of Living Index
               </label>
-              <input
-                type="number"
+              <SmartNumericInput
                 value={city.costOfLivingIndex}
-                onChange={e => onCityChange?.({ ...city, costOfLivingIndex: parseFloat(e.target.value) || 0 })}
+                onChange={val => onCityChange?.({ ...city, costOfLivingIndex: val })}
                 disabled={!onCityChange}
                 style={{
                   width: '100%',
@@ -824,10 +1061,9 @@ export default function SingleCityDashboard({
               <label style={{ fontSize: '0.62rem', color: 'var(--text-secondary)', fontFamily: 'var(--font-mono)', display: 'block', marginBottom: '4px', textTransform: 'uppercase' }}>
                 Rent Index
               </label>
-              <input
-                type="number"
+              <SmartNumericInput
                 value={city.rentIndex}
-                onChange={e => onCityChange?.({ ...city, rentIndex: parseFloat(e.target.value) || 0 })}
+                onChange={val => onCityChange?.({ ...city, rentIndex: val })}
                 disabled={!onCityChange}
                 style={{
                   width: '100%',
@@ -846,10 +1082,9 @@ export default function SingleCityDashboard({
               <label style={{ fontSize: '0.62rem', color: 'var(--text-secondary)', fontFamily: 'var(--font-mono)', display: 'block', marginBottom: '4px', textTransform: 'uppercase' }}>
                 Groceries Index
               </label>
-              <input
-                type="number"
+              <SmartNumericInput
                 value={city.groceriesIndex}
-                onChange={e => onCityChange?.({ ...city, groceriesIndex: parseFloat(e.target.value) || 0 })}
+                onChange={val => onCityChange?.({ ...city, groceriesIndex: val })}
                 disabled={!onCityChange}
                 style={{
                   width: '100%',

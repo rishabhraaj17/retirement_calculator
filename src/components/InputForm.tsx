@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { UserInputs, Assumptions } from '@/types';
 import { HelpIcon } from './AssumptionsPanel';
 
@@ -272,6 +272,30 @@ function Field({
   testId?: string;
   tooltip?: string;
 }) {
+  const [localVal, setLocalVal] = useState<string>(value.toString());
+
+  useEffect(() => {
+    const parsedLocal = parseFloat(localVal);
+    if (parsedLocal !== value && !isNaN(value)) {
+      setLocalVal(value.toString());
+    }
+  }, [value]);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const valStr = e.target.value;
+    setLocalVal(valStr);
+    const parsed = parseFloat(valStr);
+    onChange(!isNaN(parsed) ? parsed : 0);
+  };
+
+  const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
+    e.target.style.borderColor = 'var(--border-default)';
+    e.target.style.boxShadow = 'none';
+    if (localVal === '' || isNaN(parseFloat(localVal))) {
+      setLocalVal(value.toString());
+    }
+  };
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column' }}>
       <div
@@ -309,8 +333,8 @@ function Field({
       <div style={{ position: 'relative' }}>
         <input
           type="number"
-          value={value}
-          onChange={e => onChange(parseFloat(e.target.value) || 0)}
+          value={localVal}
+          onChange={handleChange}
           min={min}
           max={max}
           step={step}
@@ -332,10 +356,7 @@ function Field({
             e.target.style.borderColor = 'var(--accent)';
             e.target.style.boxShadow = '0 0 0 2px var(--accent-glow)';
           }}
-          onBlur={e => {
-            e.target.style.borderColor = 'var(--border-default)';
-            e.target.style.boxShadow = 'none';
-          }}
+          onBlur={handleBlur}
         />
         {suffix && (
           <span

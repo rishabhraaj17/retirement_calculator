@@ -277,6 +277,7 @@ export default function Home() {
                       userInputs={userInputs}
                       onUserInputsChange={setUserInputs}
                       onCityChange={handleCityChange}
+                      assumptions={assumptions}
                     />
                   ) : null;
                 })()}

@@ -188,7 +188,7 @@ describe('SingleCityDashboard', () => {
     const areaContainer = screen.getByTestId('drawdown-area-chart');
     expect(areaContainer).toBeInTheDocument();
 
-    const areaChart = screen.getByTestId('area-chart-component');
+    const areaChart = within(areaContainer).getByTestId('area-chart-component');
     expect(areaChart).toBeInTheDocument();
 
     const rawTimeline = areaChart.getAttribute('data-data');

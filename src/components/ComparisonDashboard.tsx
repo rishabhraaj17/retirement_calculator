@@ -1,5 +1,4 @@
-'use client';
-
+import { useState, useEffect } from 'react';
 import {
   BarChart,
   Bar,
@@ -17,6 +16,58 @@ interface ComparisonDashboardProps {
   results: CalculationResult[];
   userInputs?: UserInputs;
   onUserInputsChange?: (inputs: UserInputs) => void;
+}
+
+function SmartNumericInput({
+  value,
+  onChange,
+  disabled,
+  style,
+  placeholder,
+  dataTestId,
+}: {
+  value: number;
+  onChange: (val: number) => void;
+  disabled?: boolean;
+  style?: React.CSSProperties;
+  placeholder?: string;
+  dataTestId?: string;
+}) {
+  const [localVal, setLocalVal] = useState<string>(Math.round(value).toString());
+
+  useEffect(() => {
+    const parsedLocal = parseFloat(localVal);
+    const roundedProp = Math.round(value);
+    if (parsedLocal !== roundedProp && !isNaN(roundedProp)) {
+      setLocalVal(roundedProp.toString());
+    }
+  }, [value]);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const valStr = e.target.value;
+    setLocalVal(valStr);
+    const parsed = parseFloat(valStr);
+    onChange(!isNaN(parsed) ? parsed : 0);
+  };
+
+  const handleBlur = () => {
+    if (localVal === '' || isNaN(parseFloat(localVal))) {
+      setLocalVal(Math.round(value).toString());
+    }
+  };
+
+  return (
+    <input
+      type="number"
+      data-testid={dataTestId}
+      value={localVal}
+      onChange={handleChange}
+      onBlur={handleBlur}
+      disabled={disabled}
+      placeholder={placeholder}
+      style={style}
+    />
+  );
 }
 
 const CITY_PALETTE: Record<string, string> = {
@@ -581,22 +632,22 @@ export default function ComparisonDashboard({
                         }}
                       >
                         {row.key === 'totalMonthlyNeed' && userInputs && onUserInputsChange ? (
-                          <input
-                            type="number"
-                            value={Math.round(val)}
-                            onChange={e => handleCellOverride(result.city.id, parseFloat(e.target.value) || 0)}
-                            style={{
-                              backgroundColor: 'var(--bg-elevated)',
-                              border: '1px solid var(--border-default)',
-                              borderRadius: 'var(--radius-xs)',
-                              color: 'var(--text-primary)',
-                              fontFamily: 'var(--font-mono)',
-                              width: '80px',
-                              padding: '2px 6px',
-                              fontSize: '0.8rem',
-                              textAlign: 'right'
-                            }}
-                          />
+                          <SmartNumericInput
+                             value={val}
+                             onChange={newVal => handleCellOverride(result.city.id, newVal)}
+                             style={{
+                               backgroundColor: 'var(--bg-elevated)',
+                               border: '1px solid var(--border-default)',
+                               borderRadius: 'var(--radius-xs)',
+                               color: 'var(--text-primary)',
+                               fontFamily: 'var(--font-mono)',
+                               width: '80px',
+                               padding: '2px 6px',
+                               fontSize: '0.8rem',
+                               textAlign: 'right',
+                               outline: 'none',
+                             }}
+                           />
                         ) : row.danger && val === 0 ? (
                           'Fully Funded'
                         ) : (
