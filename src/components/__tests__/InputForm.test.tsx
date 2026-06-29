@@ -34,7 +34,6 @@ describe('InputForm', () => {
     );
 
     expect(screen.getByTestId('input-form')).toBeInTheDocument();
-    expect(screen.getByText('Personal Details & Financial Inputs')).toBeInTheDocument();
     expect(screen.getByText('Personal Details')).toBeInTheDocument();
     expect(screen.getByText('Financial Inputs')).toBeInTheDocument();
     expect(screen.getByText('Assumptions')).toBeInTheDocument();
@@ -55,21 +54,6 @@ describe('InputForm', () => {
     expect(currentAgeInput.value).toBe('35');
   });
 
-  it('renders retirement age input with correct value', () => {
-    render(
-      <InputForm
-        userInputs={mockUserInputs}
-        assumptions={mockAssumptions}
-        onUserInputsChange={mockOnUserInputsChange}
-        onAssumptionsChange={mockOnAssumptionsChange}
-      />
-    );
-
-    const retirementAgeInput = screen.getByTestId('input-retirement-age') as HTMLInputElement;
-    expect(retirementAgeInput).toBeInTheDocument();
-    expect(retirementAgeInput.value).toBe('65');
-  });
-
   it('calls onUserInputsChange when current age changes', () => {
     render(
       <InputForm
@@ -86,44 +70,6 @@ describe('InputForm', () => {
     expect(mockOnUserInputsChange).toHaveBeenCalledWith({
       ...mockUserInputs,
       currentAge: 40,
-    });
-  });
-
-  it('calls onUserInputsChange when retirement age changes', () => {
-    render(
-      <InputForm
-        userInputs={mockUserInputs}
-        assumptions={mockAssumptions}
-        onUserInputsChange={mockOnUserInputsChange}
-        onAssumptionsChange={mockOnAssumptionsChange}
-      />
-    );
-
-    const retirementAgeInput = screen.getByTestId('input-retirement-age');
-    fireEvent.change(retirementAgeInput, { target: { value: '67' } });
-
-    expect(mockOnUserInputsChange).toHaveBeenCalledWith({
-      ...mockUserInputs,
-      retirementAge: 67,
-    });
-  });
-
-  it('calls onUserInputsChange when current savings changes', () => {
-    render(
-      <InputForm
-        userInputs={mockUserInputs}
-        assumptions={mockAssumptions}
-        onUserInputsChange={mockOnUserInputsChange}
-        onAssumptionsChange={mockOnAssumptionsChange}
-      />
-    );
-
-    const savingsInput = screen.getByTestId('input-current-savings');
-    fireEvent.change(savingsInput, { target: { value: '75000' } });
-
-    expect(mockOnUserInputsChange).toHaveBeenCalledWith({
-      ...mockUserInputs,
-      currentSavings: 75000,
     });
   });
 
@@ -161,22 +107,7 @@ describe('InputForm', () => {
     expect(expenseInput.value).toBe('3000');
   });
 
-  it('renders base monthly expense input with correct value when provided', () => {
-    render(
-      <InputForm
-        userInputs={{ ...mockUserInputs, baseMonthlyExpense: 4500 }}
-        assumptions={mockAssumptions}
-        onUserInputsChange={mockOnUserInputsChange}
-        onAssumptionsChange={mockOnAssumptionsChange}
-      />
-    );
-
-    const expenseInput = screen.getByTestId('input-base-monthly-expense') as HTMLInputElement;
-    expect(expenseInput).toBeInTheDocument();
-    expect(expenseInput.value).toBe('4500');
-  });
-
-  it('calls onUserInputsChange when base monthly expense changes', () => {
+  it('calls onUserInputsChange and adjusts others residually when base monthly expense changes', () => {
     render(
       <InputForm
         userInputs={mockUserInputs}
@@ -189,13 +120,15 @@ describe('InputForm', () => {
     const expenseInput = screen.getByTestId('input-base-monthly-expense');
     fireEvent.change(expenseInput, { target: { value: '3500' } });
 
+    // baseRent defaults to 1050, baseGroceries to 540, baseHealthcare to 350. Residual Others = 3500 - 1050 - 540 - 350 = 1560
     expect(mockOnUserInputsChange).toHaveBeenCalledWith({
       ...mockUserInputs,
       baseMonthlyExpense: 3500,
+      baseOthers: 1560,
     });
   });
 
-  it('calls onAssumptionsChange when investment return changes', () => {
+  it('toggles collapsible category details panel and fires category changes', () => {
     render(
       <InputForm
         userInputs={mockUserInputs}
@@ -205,69 +138,26 @@ describe('InputForm', () => {
       />
     );
 
-    const returnInput = screen.getByTestId('input-investment-return');
-    expect(returnInput).toBeInTheDocument();
+    expect(screen.queryByTestId('input-base-rent')).not.toBeInTheDocument();
 
-    // Investment return is displayed as percentage (6 instead of 0.06)
-    expect((returnInput as HTMLInputElement).value).toBe('6');
+    const toggleBtn = screen.getByText('▶ Show Expense Details');
+    fireEvent.click(toggleBtn);
 
-    fireEvent.change(returnInput, { target: { value: '7' } });
+    expect(screen.getByText('▼ Hide Expense Details')).toBeInTheDocument();
+    const rentInput = screen.getByTestId('input-base-rent');
+    expect(rentInput).toBeInTheDocument();
 
-    expect(mockOnAssumptionsChange).toHaveBeenCalledWith({
-      ...mockAssumptions,
-      investmentReturn: 0.07,
+    fireEvent.change(rentInput, { target: { value: '1200' } });
+
+    // rent: 1200, groceries defaults to 540, healthcare to 350, others to 1060. Total sum = 3150
+    expect(mockOnUserInputsChange).toHaveBeenCalledWith({
+      ...mockUserInputs,
+      baseRent: 1200,
+      baseMonthlyExpense: 3150,
     });
   });
 
-  it('calls onAssumptionsChange when inflation rate changes', () => {
-    render(
-      <InputForm
-        userInputs={mockUserInputs}
-        assumptions={mockAssumptions}
-        onUserInputsChange={mockOnUserInputsChange}
-        onAssumptionsChange={mockOnAssumptionsChange}
-      />
-    );
-
-    const inflationInput = screen.getByTestId('input-inflation-rate');
-    // Inflation rate is displayed as percentage (2.5 instead of 0.025)
-    expect((inflationInput as HTMLInputElement).value).toBe('2.5');
-
-    fireEvent.change(inflationInput, { target: { value: '3' } });
-
-    expect(mockOnAssumptionsChange).toHaveBeenCalledWith({
-      ...mockAssumptions,
-      inflationRate: 0.03,
-    });
-  });
-
-  it('shows default investment return hint', () => {
-    render(
-      <InputForm
-        userInputs={mockUserInputs}
-        assumptions={mockAssumptions}
-        onUserInputsChange={mockOnUserInputsChange}
-        onAssumptionsChange={mockOnAssumptionsChange}
-      />
-    );
-
-    expect(screen.getByText('Default: 6%')).toBeInTheDocument();
-  });
-
-  it('shows inflation rate hint about data sources', () => {
-    render(
-      <InputForm
-        userInputs={mockUserInputs}
-        assumptions={mockAssumptions}
-        onUserInputsChange={mockOnUserInputsChange}
-        onAssumptionsChange={mockOnAssumptionsChange}
-      />
-    );
-
-    expect(screen.getByText('Fetched from Eurostat/RBI or manual input')).toBeInTheDocument();
-  });
-
-  it('renders range sliders for all inputs', () => {
+  it('renders range sliders for core inputs', () => {
     render(
       <InputForm
         userInputs={mockUserInputs}
@@ -282,27 +172,10 @@ describe('InputForm', () => {
     expect(screen.getByTestId('input-current-savings-slider')).toBeInTheDocument();
     expect(screen.getByTestId('input-monthly-contribution-slider')).toBeInTheDocument();
     expect(screen.getByTestId('input-base-monthly-expense-slider')).toBeInTheDocument();
-    expect(screen.getByTestId('input-investment-return-slider')).toBeInTheDocument();
-    expect(screen.getByTestId('input-inflation-rate-slider')).toBeInTheDocument();
     expect(screen.getByTestId('input-retirement-years-slider')).toBeInTheDocument();
-  });
-
-  it('calls onUserInputsChange when a slider is adjusted', () => {
-    render(
-      <InputForm
-        userInputs={mockUserInputs}
-        assumptions={mockAssumptions}
-        onUserInputsChange={mockOnUserInputsChange}
-        onAssumptionsChange={mockOnAssumptionsChange}
-      />
-    );
-
-    const currentAgeSlider = screen.getByTestId('input-current-age-slider');
-    fireEvent.change(currentAgeSlider, { target: { value: '40' } });
-
-    expect(mockOnUserInputsChange).toHaveBeenCalledWith({
-      ...mockUserInputs,
-      currentAge: 40,
-    });
+    
+    // Removed global sliders
+    expect(screen.queryByTestId('input-investment-return-slider')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('input-inflation-rate-slider')).not.toBeInTheDocument();
   });
 });

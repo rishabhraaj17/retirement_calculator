@@ -1,6 +1,8 @@
 'use client';
 
+import { useState } from 'react';
 import { UserInputs, Assumptions } from '@/types';
+import { HelpIcon } from './AssumptionsPanel';
 
 interface InputFormProps {
   userInputs: UserInputs;
@@ -15,11 +17,42 @@ export default function InputForm({
   onUserInputsChange,
   onAssumptionsChange,
 }: InputFormProps) {
+  const [showDetails, setShowDetails] = useState(false);
+
   const setInput = (field: keyof UserInputs, value: number) =>
     onUserInputsChange({ ...userInputs, [field]: value });
 
   const setAssumption = (field: keyof Assumptions, value: number) =>
     onAssumptionsChange({ ...assumptions, [field]: value });
+
+  const handleBaseMonthlyExpenseChange = (totalVal: number) => {
+    const rent = userInputs.baseRent ?? 1050;
+    const groceries = userInputs.baseGroceries ?? 540;
+    const healthcare = userInputs.baseHealthcare ?? 350;
+    const others = Math.max(0, totalVal - rent - groceries - healthcare);
+    
+    onUserInputsChange({
+      ...userInputs,
+      baseMonthlyExpense: totalVal,
+      baseOthers: others,
+    });
+  };
+
+  const setCategory = (
+    key: 'baseRent' | 'baseGroceries' | 'baseHealthcare' | 'baseOthers',
+    val: number
+  ) => {
+    const rent = key === 'baseRent' ? val : (userInputs.baseRent ?? 1050);
+    const groceries = key === 'baseGroceries' ? val : (userInputs.baseGroceries ?? 540);
+    const healthcare = key === 'baseHealthcare' ? val : (userInputs.baseHealthcare ?? 350);
+    const others = key === 'baseOthers' ? val : (userInputs.baseOthers ?? 1060);
+
+    onUserInputsChange({
+      ...userInputs,
+      [key]: val,
+      baseMonthlyExpense: rent + groceries + healthcare + others,
+    });
+  };
 
   return (
     <div data-testid="input-form" style={{ display: 'flex', flexDirection: 'column', gap: '22px' }}>
@@ -38,6 +71,7 @@ export default function InputForm({
             min={18}
             max={80}
             suffix="yrs"
+            tooltip="Your current age today."
             testId="input-current-age"
           />
           <Field
@@ -47,6 +81,7 @@ export default function InputForm({
             min={50}
             max={80}
             suffix="yrs"
+            tooltip="The target age at which you plan to stop working and retire."
             testId="input-retirement-age"
           />
         </div>
@@ -55,7 +90,7 @@ export default function InputForm({
       {/* Finances */}
       <div>
         <SectionLabel>Financial Inputs</SectionLabel>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
           <Field
             label="Current Savings"
             value={userInputs.currentSavings}
@@ -64,6 +99,7 @@ export default function InputForm({
             max={1000000}
             step={5000}
             suffix="€"
+            tooltip="Your total accumulated assets today (cash, stock, mutual funds, gold)."
             testId="input-current-savings"
           />
           <Field
@@ -74,48 +110,111 @@ export default function InputForm({
             max={50000}
             step={100}
             suffix="€"
+            tooltip="How much you plan to save/invest every month until retirement."
             testId="input-monthly-contribution"
           />
           <Field
             label="Base Monthly Expense"
             value={userInputs.baseMonthlyExpense ?? 3000}
-            onChange={v => setInput('baseMonthlyExpense', v)}
+            onChange={v => handleBaseMonthlyExpenseChange(v)}
             min={500}
             max={20000}
             step={100}
             suffix="€"
             hint="Default: 3000"
+            tooltip="Your baseline target monthly expense in today's money (scales dynamically to Munich baseline CoL = 100)."
             testId="input-base-monthly-expense"
           />
+
+          {/* Collapsible Expense Details */}
+          <div>
+            <button
+              onClick={() => setShowDetails(!showDetails)}
+              style={{
+                background: 'transparent',
+                border: 'none',
+                color: 'var(--accent)',
+                cursor: 'pointer',
+                fontFamily: 'var(--font-mono)',
+                fontSize: '0.68rem',
+                padding: '4px 0',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px',
+                outline: 'none',
+              }}
+            >
+              {showDetails ? '▼ Hide Expense Details' : '▶ Show Expense Details'}
+            </button>
+
+            {showDetails && (
+              <div
+                style={{
+                  padding: '12px 14px',
+                  backgroundColor: 'var(--bg-elevated)',
+                  border: '1px solid var(--border-subtle)',
+                  borderRadius: 'var(--radius-xs)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '12px',
+                  marginTop: '8px',
+                  animation: 'fadeInUp 0.18s ease',
+                }}
+              >
+                <Field
+                  label="Rent/Housing"
+                  value={userInputs.baseRent ?? 1050}
+                  onChange={v => setCategory('baseRent', v)}
+                  min={0}
+                  max={5000}
+                  step={50}
+                  suffix="€"
+                  tooltip="Baseline monthly rent. Scales based on city rentIndex."
+                  testId="input-base-rent"
+                />
+                <Field
+                  label="Groceries"
+                  value={userInputs.baseGroceries ?? 540}
+                  onChange={v => setCategory('baseGroceries', v)}
+                  min={0}
+                  max={2000}
+                  step={20}
+                  suffix="€"
+                  tooltip="Baseline monthly food cost. Scales based on city groceriesIndex."
+                  testId="input-base-groceries"
+                />
+                <Field
+                  label="Healthcare"
+                  value={userInputs.baseHealthcare ?? 350}
+                  onChange={v => setCategory('baseHealthcare', v)}
+                  min={0}
+                  max={1000}
+                  step={10}
+                  suffix="€"
+                  tooltip="Baseline healthcare expense. Scales for India, but set to 0 for Germany (covered in taxes)."
+                  testId="input-base-healthcare"
+                />
+                <Field
+                  label="Others"
+                  value={userInputs.baseOthers ?? 1060}
+                  onChange={v => setCategory('baseOthers', v)}
+                  min={0}
+                  max={5000}
+                  step={50}
+                  suffix="€"
+                  tooltip="Other baseline expenses (utilities, transport, shopping). Scales by city-wide Cost of Living index."
+                  testId="input-base-others"
+                />
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
       {/* Assumptions */}
       <div>
         <SectionLabel>Assumptions</SectionLabel>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-          <Field
-            label="Investment Return"
-            value={parseFloat((assumptions.investmentReturn * 100).toFixed(1))}
-            onChange={v => setAssumption('investmentReturn', v / 100)}
-            min={0}
-            max={20}
-            step={0.1}
-            suffix="%"
-            hint="Default: 6%"
-            testId="input-investment-return"
-          />
-          <Field
-            label="Inflation Rate"
-            value={parseFloat((assumptions.inflationRate * 100).toFixed(1))}
-            onChange={v => setAssumption('inflationRate', v / 100)}
-            min={0}
-            max={20}
-            step={0.1}
-            suffix="%"
-            hint="Default: 4%"
-            testId="input-inflation-rate"
-          />
+        <div>
           <Field
             label="Years in Retirement"
             value={assumptions.retirementYears}
@@ -124,6 +223,7 @@ export default function InputForm({
             max={50}
             suffix="yrs"
             hint="Default: 20"
+            tooltip="Number of years you expect your retirement corpus to support you."
             testId="input-retirement-years"
           />
         </div>
@@ -159,6 +259,7 @@ function Field({
   suffix,
   hint,
   testId,
+  tooltip,
 }: {
   label: string;
   value: number;
@@ -169,6 +270,7 @@ function Field({
   suffix?: string;
   hint?: string;
   testId?: string;
+  tooltip?: string;
 }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column' }}>
@@ -185,9 +287,12 @@ function Field({
             fontSize: '0.72rem',
             color: 'var(--text-secondary)',
             fontWeight: 400,
+            display: 'flex',
+            alignItems: 'center',
           }}
         >
-          {label}
+          <span>{label}</span>
+          {tooltip && <HelpIcon text={tooltip} />}
         </label>
         {hint && (
           <span
@@ -274,4 +379,3 @@ function Field({
     </div>
   );
 }
-
