@@ -25,6 +25,10 @@ export interface UserInputs {
   currentSavings: number;
   monthlyContribution: number;
   baseMonthlyExpense?: number;
+  baseRent?: number;
+  baseGroceries?: number;
+  baseOthers?: number;
+  baseHealthcare?: number;
   cityExpenseOverrides?: Record<string, number>;
 }
 
@@ -34,6 +38,10 @@ export interface Assumptions {
   inflationRate: number; // Annual inflation rate
   retirementYears: number; // Years in retirement (life expectancy - retirement age)
   countryInflation?: {
+    Germany: number;
+    India: number;
+  };
+  countryInvestmentReturn?: {
     Germany: number;
     India: number;
   };

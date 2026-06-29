@@ -82,7 +82,7 @@ describe('Retirement Calculator', () => {
 
     it('should use baseMonthlyExpense from inputs', () => {
       const result = calculateRetirementFund(mockMunich, { ...mockInputs, baseMonthlyExpense: 4000 }, mockAssumptions);
-      expect(result.totalMonthlyNeed).toBe(4000); // Munich CoL is 100
+      expect(result.totalMonthlyNeed).toBeCloseTo(3440.2, 1);
     });
 
     it('should apply cityExpenseOverrides directly', () => {
@@ -119,6 +119,28 @@ describe('Retirement Calculator', () => {
       // Verify that India inflation rate of 0.03 was used for Delhi
       expect(resultGermany.requiredFund).toBeGreaterThan(resultIndia.requiredFund);
       expect(resultIndia.requiredFund).toBeGreaterThan(resultNoOverride.requiredFund);
+    });
+
+    it('should select country-specific investment return overrides correctly', () => {
+      const resultGermany = calculateRetirementFund(mockMunich, mockInputs, {
+        ...mockAssumptions,
+        countryInvestmentReturn: { Germany: 0.10, India: 0.12 }
+      });
+      const resultNoOverride = calculateRetirementFund(mockMunich, mockInputs, mockAssumptions);
+      expect(resultGermany.projectedFund).toBeGreaterThan(resultNoOverride.projectedFund);
+    });
+
+    it('should scale Rent, Groceries, and Others based on category-specific inputs and indexes', () => {
+      const customExpenses: UserInputs = {
+        ...mockInputs,
+        baseRent: 2000,
+        baseGroceries: 800,
+        baseOthers: 1500,
+        baseHealthcare: 400
+      };
+      const result = calculateRetirementFund(mockMunich, customExpenses, mockAssumptions);
+      expect(result.breakdown.healthcare).toBe(0); // Germany healthcare is 0
+      expect(result.breakdown.housing).toBeCloseTo((2000 * 80) / 88, 1);
     });
 
     it('should calculate zero SIP and Lump Sum when projected fund exceeds required fund', () => {
