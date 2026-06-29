@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, act, within } from '@testing-library/react';
 import Home from '../page';
 
 // Mock Recharts to avoid canvas / ResizeObserver errors in test environments
@@ -126,4 +126,85 @@ describe('Home Orchestrator Page Integration', () => {
     expect(screen.getByTestId('comparison-dashboard')).toBeInTheDocument();
     expect(screen.queryByTestId('city-deep-dive-select')).not.toBeInTheDocument();
   });
+
+  it('propagates custom expense edits in SingleCityDashboard and updates calculator state', async () => {
+    render(<Home />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('city-selector')).toBeInTheDocument();
+    });
+
+    // Select Munich
+    fireEvent.click(screen.getByTestId('checkbox-munich'));
+
+    // Verify it shows Single City Focus and Munich Detailed Analysis
+    expect(screen.getByText('Munich Detailed Analysis')).toBeInTheDocument();
+
+    // Find the input element (spinbutton) inside single city dashboard
+    const dashboard = screen.getByTestId('single-city-dashboard');
+    const input = within(dashboard).getByRole('spinbutton');
+    expect(input).toBeInTheDocument();
+    expect(input).toHaveValue(3000);
+
+    const reqCard = screen.getByTestId('hero-required-corpus');
+    expect(reqCard).toBeInTheDocument();
+    const initialText = reqCard.textContent;
+
+    // Change value
+    fireEvent.change(input, { target: { value: '4000' } });
+
+    // Verify input value updated
+    expect(input).toHaveValue(4000);
+
+    // Verify calculator state updated
+    await waitFor(() => {
+      expect(reqCard.textContent).not.toBe(initialText);
+    });
+  });
+
+  it('propagates custom expense edits in ComparisonDashboard and updates calculator state', async () => {
+    render(<Home />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('city-selector')).toBeInTheDocument();
+    });
+
+    // Select Munich and Delhi NCR
+    fireEvent.click(screen.getByTestId('checkbox-munich'));
+    fireEvent.click(screen.getByTestId('checkbox-delhi-ncr'));
+
+    // Switch to Comparison tab
+    fireEvent.click(screen.getByRole('button', { name: 'Compare Cities' }));
+
+    // Verify it renders Comparison Dashboard
+    expect(screen.getByTestId('comparison-dashboard')).toBeInTheDocument();
+
+    // Find the row for Munich and Delhi NCR
+    const dashboard = screen.getByTestId('comparison-dashboard');
+    const munichRow = within(dashboard).getAllByText('Munich').map(el => el.closest('tr')).find(Boolean);
+    const delhiRow = within(dashboard).getAllByText('Delhi NCR').map(el => el.closest('tr')).find(Boolean);
+    
+    expect(munichRow).toBeDefined();
+    expect(delhiRow).toBeDefined();
+
+    const munichInput = within(munichRow!).getByRole('spinbutton');
+    const delhiInput = within(delhiRow!).getByRole('spinbutton');
+
+    expect(munichInput).toHaveValue(3000); // Munich input
+    expect(delhiInput).toHaveValue(750);  // Delhi NCR input (3000 * 25 / 100)
+
+    const initialRowText = delhiRow!.textContent;
+
+    // Change value
+    fireEvent.change(delhiInput, { target: { value: '1000' } });
+
+    // The input value should be updated
+    expect(delhiInput).toHaveValue(1000);
+
+    // And the row text should change due to recalculations
+    await waitFor(() => {
+      expect(delhiRow!.textContent).not.toBe(initialRowText);
+    });
+  });
 });
+

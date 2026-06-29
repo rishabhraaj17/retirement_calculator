@@ -14,6 +14,7 @@ const defaultUserInputs: UserInputs = {
   retirementAge: 65,
   currentSavings: 50000,
   monthlyContribution: 1000,
+  baseMonthlyExpense: 3000,
 };
 
 const defaultAssumptions: Assumptions = {
@@ -131,7 +132,11 @@ export default function Home() {
       {/* Main content */}
       <section style={{ overflowY: 'auto', padding: '32px 36px' }}>
         {selectedCities.length === 0 ? (
-          <ComparisonDashboard results={results} />
+          <ComparisonDashboard
+            results={results}
+            userInputs={userInputs}
+            onUserInputsChange={setUserInputs}
+          />
         ) : (
           <>
             {/* View switcher tabs */}
@@ -255,7 +260,11 @@ export default function Home() {
                 })()}
               </>
             ) : (
-              <ComparisonDashboard results={results} />
+              <ComparisonDashboard
+                results={results}
+                userInputs={userInputs}
+                onUserInputsChange={setUserInputs}
+              />
             )}
           </>
         )}
