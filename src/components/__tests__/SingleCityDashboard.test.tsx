@@ -127,7 +127,7 @@ describe('SingleCityDashboard', () => {
     // Check key message containing gap, required SIP, and lump sum
     expect(within(sipCard).getByText(/To cover your gap of/)).toBeInTheDocument();
     expect(within(sipCard).getByText('€400,000')).toBeInTheDocument();
-    expect(within(sipCard).getByText('€350/month')).toBeInTheDocument();
+    expect(within(sipCard).getAllByText('€350/month')[0]).toBeInTheDocument();
     expect(within(sipCard).getByText('€52,000')).toBeInTheDocument();
   });
 

@@ -200,6 +200,7 @@ export default function ComparisonDashboard({
     { key: 'projectedFund', label: 'Projected', getValue: (r) => r.projectedFund, positive: true },
     { key: 'fundingGap', label: 'Funding Gap', getValue: (r) => r.fundingGap, danger: true },
     { key: 'requiredSip', label: 'Required Add. SIP', getValue: (r) => r.requiredSip },
+    { key: 'totalMonthlyInvestmentTarget', label: 'Total Monthly Target SIP', getValue: (r) => (userInputs?.monthlyContribution ?? 0) + r.requiredSip, highlight: true },
     { key: 'requiredLumpSum', label: 'Lump Sum Needed', getValue: (r) => r.requiredLumpSum },
   ];
 

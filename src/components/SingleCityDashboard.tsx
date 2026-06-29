@@ -362,6 +362,40 @@ export default function SingleCityDashboard({
             {fundingGap > 0 ? 'Shortfall to bridge through saving' : 'Fully funded retirement goal'}
           </div>
         </div>
+
+        {/* Target Savings Rate */}
+        <div
+          data-testid="hero-target-savings-rate"
+          style={{
+            padding: '18px',
+            borderRadius: 'var(--radius)',
+            border: '1px solid var(--border-subtle)',
+            backgroundColor: 'var(--bg-surface)',
+            position: 'relative',
+            overflow: 'hidden',
+          }}
+        >
+          <div
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              height: '2px',
+              backgroundColor: 'var(--accent)',
+              opacity: 0.65,
+            }}
+          />
+          <div style={{ fontSize: '0.55rem', fontFamily: 'var(--font-mono)', color: 'var(--text-muted)', letterSpacing: '0.14em', textTransform: 'uppercase', marginBottom: '4px' }}>
+            Target Savings Rate
+          </div>
+          <div style={{ fontSize: '1.65rem', fontFamily: 'var(--font-mono)', color: 'var(--accent-light)', fontWeight: 500, lineHeight: 1.2 }}>
+            {fmtFull((userInputs?.monthlyContribution ?? 0) + requiredSip)}
+          </div>
+          <div style={{ fontSize: '0.62rem', color: 'var(--text-secondary)', marginTop: '6px', fontFamily: 'var(--font-body)' }}>
+            Total monthly investment ongoing forward
+          </div>
+        </div>
       </div>
 
       {/* SIP Goal Callout Card */}
@@ -406,11 +440,11 @@ export default function SingleCityDashboard({
         >
           {fundingGap > 0 ? (
             <>
-              To cover your gap of <strong style={{ color: 'var(--accent-light)' }}>{fmtFull(fundingGap)}</strong>, you need to save an additional <strong style={{ color: 'var(--accent-light)' }}>{fmtFull(requiredSip)}/month</strong> (or make a lump sum investment of <strong style={{ color: 'var(--accent-light)' }}>{fmtFull(requiredLumpSum)}</strong> today).
+              To cover your gap of <strong style={{ color: 'var(--accent-light)' }}>{fmtFull(fundingGap)}</strong>, you need to save an additional <strong style={{ color: 'var(--accent-light)' }}>{fmtFull(requiredSip)}/month</strong>—bringing your total target savings rate to <strong style={{ color: 'var(--accent-light)' }}>{fmtFull((userInputs?.monthlyContribution ?? 0) + requiredSip)}/month</strong> (or make a lump sum investment of <strong style={{ color: 'var(--accent-light)' }}>{fmtFull(requiredLumpSum)}</strong> today).
             </>
           ) : (
             <>
-              Congratulations! You are on track to meet your retirement goal in <strong style={{ color: 'var(--positive)' }}>{city.name}</strong>. You do not have a funding gap.
+              Congratulations! You are on track to meet your retirement goal in <strong style={{ color: 'var(--positive)' }}>{city.name}</strong>. Your current monthly investment of <strong style={{ color: 'var(--positive)' }}>{fmtFull(userInputs?.monthlyContribution ?? 0)}/month</strong> is fully sufficient.
             </>
           )}
         </p>
