@@ -88,6 +88,10 @@ export default function Home() {
     }
   }, [selectedCities, cities, userInputs, assumptions]);
 
+  const handleCityChange = (updatedCity: City) => {
+    setCities(prev => prev.map(c => c.id === updatedCity.id ? updatedCity : c));
+  };
+
   return (
     <div className="app-layout">
       {/* Sidebar */}
@@ -263,6 +267,7 @@ export default function Home() {
                       result={activeResult}
                       userInputs={userInputs}
                       onUserInputsChange={setUserInputs}
+                      onCityChange={handleCityChange}
                     />
                   ) : null;
                 })()}

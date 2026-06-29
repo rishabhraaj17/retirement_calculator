@@ -142,7 +142,7 @@ describe('Home Orchestrator Page Integration', () => {
 
     // Find the input element (spinbutton) inside single city dashboard
     const dashboard = screen.getByTestId('single-city-dashboard');
-    const input = within(dashboard).getByRole('spinbutton');
+    const input = within(dashboard).getByTestId('total-monthly-need-input');
     expect(input).toBeInTheDocument();
     expect(input).toHaveValue(2650);
 

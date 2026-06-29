@@ -30,6 +30,7 @@ export interface UserInputs {
   baseOthers?: number;
   baseHealthcare?: number;
   cityExpenseOverrides?: Record<string, number>;
+  cityCategoryOverrides?: Record<string, { rent?: number; groceries?: number; healthcare?: number; others?: number }>;
 }
 
 // Assumptions interface for calculation parameters

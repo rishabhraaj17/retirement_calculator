@@ -171,10 +171,10 @@ describe('SingleCityDashboard', () => {
     const data = JSON.parse(rawData!);
     expect(data).toHaveLength(4);
     
-    expect(data[0]).toEqual({ name: 'Rent/Housing', value: 1050, color: 'var(--de-color)' });
-    expect(data[1]).toEqual({ name: 'Groceries', value: 540, color: 'var(--in-color)' });
-    expect(data[2]).toEqual({ name: 'Healthcare', value: 350, color: 'var(--positive)' });
-    expect(data[3]).toEqual({ name: 'Others', value: 1060, color: 'var(--accent)' });
+    expect(data[0]).toEqual({ key: 'rent', name: 'Rent/Housing', value: 1050, color: 'var(--de-color)' });
+    expect(data[1]).toEqual({ key: 'groceries', name: 'Groceries', value: 540, color: 'var(--in-color)' });
+    expect(data[2]).toEqual({ key: 'healthcare', name: 'Healthcare', value: 350, color: 'var(--positive)' });
+    expect(data[3]).toEqual({ key: 'others', name: 'Others', value: 1060, color: 'var(--accent)' });
   });
 
   it('renders Area Chart with correct drawdown timeline data', () => {
@@ -215,6 +215,7 @@ describe('SingleCityDashboard', () => {
       monthlyContribution: 500,
       baseMonthlyExpense: 3000,
       cityExpenseOverrides: {},
+      cityCategoryOverrides: {},
     };
     const onUserInputsChange = jest.fn();
 
@@ -226,7 +227,7 @@ describe('SingleCityDashboard', () => {
       />
     );
 
-    const input = screen.getByRole('spinbutton');
+    const input = screen.getByTestId('total-monthly-need-input');
     expect(input).toBeInTheDocument();
     expect(input).toHaveValue(3000);
 
@@ -237,6 +238,7 @@ describe('SingleCityDashboard', () => {
       cityExpenseOverrides: {
         munich: 3500,
       },
+      cityCategoryOverrides: {},
     });
   });
 
@@ -253,6 +255,7 @@ describe('SingleCityDashboard', () => {
       monthlyContribution: 500,
       baseMonthlyExpense: 3000,
       cityExpenseOverrides: { munich: 3600 },
+      cityCategoryOverrides: {},
     };
     const onUserInputsChange = jest.fn();
 
@@ -278,6 +281,7 @@ describe('SingleCityDashboard', () => {
     expect(onUserInputsChange).toHaveBeenCalledWith({
       ...userInputs,
       cityExpenseOverrides: {},
+      cityCategoryOverrides: {},
     });
   });
 

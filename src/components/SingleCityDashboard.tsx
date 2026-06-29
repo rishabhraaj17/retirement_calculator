@@ -1,6 +1,4 @@
-'use client';
-
-import React from 'react';
+import { useState } from 'react';
 import {
   ResponsiveContainer,
   PieChart,
@@ -13,12 +11,13 @@ import {
   CartesianGrid,
   Tooltip,
 } from 'recharts';
-import { CalculationResult, UserInputs } from '@/types';
+import { CalculationResult, UserInputs, City } from '@/types';
 
 interface SingleCityDashboardProps {
   result: CalculationResult;
   userInputs?: UserInputs;
   onUserInputsChange?: (inputs: UserInputs) => void;
+  onCityChange?: (city: City) => void;
 }
 
 function fmtShort(v: number): string {
@@ -47,6 +46,7 @@ export default function SingleCityDashboard({
   result,
   userInputs,
   onUserInputsChange,
+  onCityChange,
 }: SingleCityDashboardProps) {
   if (!result) return null;
 
@@ -62,6 +62,8 @@ export default function SingleCityDashboard({
     drawdownTimeline,
   } = result;
 
+  const [showIndicesSettings, setShowIndicesSettings] = useState(false);
+
   const standardAvg = ((userInputs?.baseMonthlyExpense ?? 3000) * city.costOfLivingIndex) / 100;
   const isOverridden = Math.abs(totalMonthlyNeed - standardAvg) > 0.01;
   const diffPct = standardAvg > 0 ? Math.round(((totalMonthlyNeed - standardAvg) / standardAvg) * 100) : 0;
@@ -72,9 +74,40 @@ export default function SingleCityDashboard({
       ...(userInputs.cityExpenseOverrides || {}),
       [city.id]: val,
     };
+    const updatedCategoryOverrides = { ...(userInputs.cityCategoryOverrides || {}) };
+    delete updatedCategoryOverrides[city.id];
+
     onUserInputsChange({
       ...userInputs,
       cityExpenseOverrides: updatedOverrides,
+      cityCategoryOverrides: updatedCategoryOverrides,
+    });
+  };
+
+  const handleCategoryChange = (key: string, val: number) => {
+    if (!userInputs || !onUserInputsChange) return;
+    const currentOverrides = userInputs.cityCategoryOverrides?.[city.id] || {};
+    
+    const rent = key === 'rent' ? val : (currentOverrides.rent ?? breakdown.housing);
+    const groceries = key === 'groceries' ? val : (currentOverrides.groceries ?? breakdown.groceries);
+    const healthcare = key === 'healthcare' ? val : (currentOverrides.healthcare ?? breakdown.healthcare);
+    const others = key === 'others' ? val : (currentOverrides.others ?? breakdown.other);
+
+    const updatedCategoryOverrides = {
+      ...(userInputs.cityCategoryOverrides || {}),
+      [city.id]: {
+        ...currentOverrides,
+        [key]: val,
+      },
+    };
+
+    onUserInputsChange({
+      ...userInputs,
+      cityCategoryOverrides: updatedCategoryOverrides,
+      cityExpenseOverrides: {
+        ...(userInputs.cityExpenseOverrides || {}),
+        [city.id]: rent + groceries + healthcare + others,
+      },
     });
   };
 
@@ -82,9 +115,14 @@ export default function SingleCityDashboard({
     if (!userInputs || !onUserInputsChange) return;
     const updatedOverrides = { ...(userInputs.cityExpenseOverrides || {}) };
     delete updatedOverrides[city.id];
+    
+    const updatedCategoryOverrides = { ...(userInputs.cityCategoryOverrides || {}) };
+    delete updatedCategoryOverrides[city.id];
+
     onUserInputsChange({
       ...userInputs,
       cityExpenseOverrides: updatedOverrides,
+      cityCategoryOverrides: updatedCategoryOverrides,
     });
   };
 
@@ -93,10 +131,10 @@ export default function SingleCityDashboard({
 
   // Prepare Donut Chart Data
   const donutData = [
-    { name: 'Rent/Housing', value: Math.round(breakdown.housing), color: EXPENSE_PALETTE.housing },
-    { name: 'Groceries', value: Math.round(breakdown.groceries), color: EXPENSE_PALETTE.groceries },
-    { name: 'Healthcare', value: Math.round(breakdown.healthcare), color: EXPENSE_PALETTE.healthcare },
-    { name: 'Others', value: Math.round(breakdown.other), color: EXPENSE_PALETTE.other },
+    { key: 'rent', name: 'Rent/Housing', value: Math.round(breakdown.housing), color: EXPENSE_PALETTE.housing },
+    { key: 'groceries', name: 'Groceries', value: Math.round(breakdown.groceries), color: EXPENSE_PALETTE.groceries },
+    { key: 'healthcare', name: 'Healthcare', value: Math.round(breakdown.healthcare), color: EXPENSE_PALETTE.healthcare },
+    { key: 'others', name: 'Others', value: Math.round(breakdown.other), color: EXPENSE_PALETTE.other },
   ];
 
   // Custom tooltips
@@ -424,6 +462,7 @@ export default function SingleCityDashboard({
                 TOTAL BUDGET: €
               </span>
               <input
+                data-testid="total-monthly-need-input"
                 type="number"
                 value={Math.round(totalMonthlyNeed)}
                 onChange={e => handleOverride(parseFloat(e.target.value) || 0)}
@@ -535,17 +574,39 @@ export default function SingleCityDashboard({
             }}
           >
             {donutData.map((item, idx) => {
-              const pct = ((item.value / totalMonthlyNeed) * 100).toFixed(0);
+              const pct = ((item.value / (totalMonthlyNeed || 1)) * 100).toFixed(0);
+              const isDeHealthcare = city.country === 'Germany' && item.key === 'healthcare';
+              
               return (
                 <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: item.color }} />
-                  <div style={{ display: 'flex', flexDirection: 'column' }}>
+                  <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: item.color, flexShrink: 0 }} />
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', flex: 1 }}>
                     <span style={{ fontSize: '0.68rem', color: 'var(--text-primary)', fontWeight: 500 }}>
                       {item.name}
                     </span>
-                    <span style={{ fontSize: '0.58rem', color: 'var(--text-secondary)', fontFamily: 'var(--font-mono)' }}>
-                      {fmtFull(item.value)} ({pct}%)
-                    </span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <input
+                        type="number"
+                        value={isDeHealthcare ? 0 : Math.round(item.value)}
+                        disabled={isDeHealthcare || !onUserInputsChange}
+                        onChange={e => handleCategoryChange(item.key, parseFloat(e.target.value) || 0)}
+                        style={{
+                          backgroundColor: 'var(--bg-elevated)',
+                          border: '1px solid var(--border-default)',
+                          borderRadius: 'var(--radius-xs)',
+                          color: isDeHealthcare ? 'var(--text-muted)' : 'var(--text-primary)',
+                          fontFamily: 'var(--font-mono)',
+                          width: '65px',
+                          padding: '2px 6px',
+                          fontSize: '0.72rem',
+                          textAlign: 'right',
+                          outline: 'none',
+                        }}
+                      />
+                      <span style={{ fontSize: '0.58rem', color: 'var(--text-secondary)', fontFamily: 'var(--font-mono)' }}>
+                        ({pct}%)
+                      </span>
+                    </div>
                   </div>
                 </div>
               );
@@ -654,6 +715,123 @@ export default function SingleCityDashboard({
             </div>
           </div>
         </div>
+      </div>
+
+      {/* Collapsible City Indices & Parameters */}
+      <div
+        style={{
+          padding: '16px 20px',
+          borderRadius: 'var(--radius-sm)',
+          border: '1px solid var(--border-subtle)',
+          backgroundColor: 'var(--bg-surface)',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '12px',
+        }}
+      >
+        <button
+          onClick={() => setShowIndicesSettings(!showIndicesSettings)}
+          style={{
+            background: 'transparent',
+            border: 'none',
+            color: 'var(--text-primary)',
+            cursor: 'pointer',
+            fontFamily: 'var(--font-display)',
+            fontSize: '1.15rem',
+            fontStyle: 'italic',
+            padding: 0,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            width: '100%',
+            textAlign: 'left',
+            outline: 'none',
+          }}
+        >
+          <span>Edit City Indices & Parameters</span>
+          <span style={{ fontSize: '0.8rem', fontFamily: 'var(--font-mono)' }}>
+            {showIndicesSettings ? '▼ Hide' : '▶ Show'}
+          </span>
+        </button>
+
+        {showIndicesSettings && (
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+              gap: '16px',
+              marginTop: '10px',
+              animation: 'fadeInUp 0.16s ease',
+            }}
+          >
+            <div>
+              <label style={{ fontSize: '0.62rem', color: 'var(--text-secondary)', fontFamily: 'var(--font-mono)', display: 'block', marginBottom: '4px', textTransform: 'uppercase' }}>
+                Cost of Living Index
+              </label>
+              <input
+                type="number"
+                value={city.costOfLivingIndex}
+                onChange={e => onCityChange?.({ ...city, costOfLivingIndex: parseFloat(e.target.value) || 0 })}
+                disabled={!onCityChange}
+                style={{
+                  width: '100%',
+                  padding: '6px 10px',
+                  backgroundColor: 'var(--bg-elevated)',
+                  border: '1px solid var(--border-default)',
+                  borderRadius: 'var(--radius-xs)',
+                  color: 'var(--text-primary)',
+                  fontFamily: 'var(--font-mono)',
+                  fontSize: '0.85rem',
+                  outline: 'none',
+                }}
+              />
+            </div>
+            <div>
+              <label style={{ fontSize: '0.62rem', color: 'var(--text-secondary)', fontFamily: 'var(--font-mono)', display: 'block', marginBottom: '4px', textTransform: 'uppercase' }}>
+                Rent Index
+              </label>
+              <input
+                type="number"
+                value={city.rentIndex}
+                onChange={e => onCityChange?.({ ...city, rentIndex: parseFloat(e.target.value) || 0 })}
+                disabled={!onCityChange}
+                style={{
+                  width: '100%',
+                  padding: '6px 10px',
+                  backgroundColor: 'var(--bg-elevated)',
+                  border: '1px solid var(--border-default)',
+                  borderRadius: 'var(--radius-xs)',
+                  color: 'var(--text-primary)',
+                  fontFamily: 'var(--font-mono)',
+                  fontSize: '0.85rem',
+                  outline: 'none',
+                }}
+              />
+            </div>
+            <div>
+              <label style={{ fontSize: '0.62rem', color: 'var(--text-secondary)', fontFamily: 'var(--font-mono)', display: 'block', marginBottom: '4px', textTransform: 'uppercase' }}>
+                Groceries Index
+              </label>
+              <input
+                type="number"
+                value={city.groceriesIndex}
+                onChange={e => onCityChange?.({ ...city, groceriesIndex: parseFloat(e.target.value) || 0 })}
+                disabled={!onCityChange}
+                style={{
+                  width: '100%',
+                  padding: '6px 10px',
+                  backgroundColor: 'var(--bg-elevated)',
+                  border: '1px solid var(--border-default)',
+                  borderRadius: 'var(--radius-xs)',
+                  color: 'var(--text-primary)',
+                  fontFamily: 'var(--font-mono)',
+                  fontSize: '0.85rem',
+                  outline: 'none',
+                }}
+              />
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -46,12 +46,29 @@ export function calculateRetirementFund(
   let healthcare = 0;
   let other = 0;
 
-  if (inputs.cityExpenseOverrides?.[city.id] !== undefined) {
-    monthlyExpenses = inputs.cityExpenseOverrides[city.id] || 0;
-    housing = monthlyExpenses * 0.35;
-    groceries = monthlyExpenses * 0.18;
-    healthcare = city.country === 'Germany' ? 0 : (inputs.baseHealthcare ?? 350) * city.costOfLivingIndex / 100;
-    other = Math.max(0, monthlyExpenses - housing - groceries - healthcare);
+  const overrides = inputs.cityCategoryOverrides?.[city.id];
+  const totalOverride = inputs.cityExpenseOverrides?.[city.id];
+
+  if (totalOverride !== undefined || overrides !== undefined) {
+    if (totalOverride !== undefined && overrides === undefined) {
+      monthlyExpenses = totalOverride;
+      housing = monthlyExpenses * 0.35;
+      groceries = monthlyExpenses * 0.18;
+      healthcare = city.country === 'Germany' ? 0 : (inputs.baseHealthcare ?? 350) * city.costOfLivingIndex / 100;
+      other = Math.max(0, monthlyExpenses - housing - groceries - healthcare);
+    } else {
+      const totalBase = inputs.baseMonthlyExpense ?? 3000;
+      const baseRent = inputs.baseRent ?? (totalBase * 0.35);
+      const baseGroceries = inputs.baseGroceries ?? (totalBase * 0.18);
+      const baseHealthcare = inputs.baseHealthcare ?? (totalBase * 0.1167);
+      const baseOthers = inputs.baseOthers ?? Math.max(0, totalBase - baseRent - baseGroceries - baseHealthcare);
+
+      housing = overrides?.rent !== undefined ? overrides.rent : ((baseRent * city.rentIndex) / 88);
+      groceries = overrides?.groceries !== undefined ? overrides.groceries : ((baseGroceries * city.groceriesIndex) / 105);
+      healthcare = city.country === 'Germany' ? 0 : (overrides?.healthcare !== undefined ? overrides.healthcare : ((baseHealthcare * city.costOfLivingIndex) / 100));
+      other = overrides?.others !== undefined ? overrides.others : ((baseOthers * city.costOfLivingIndex) / 100);
+      monthlyExpenses = housing + groceries + healthcare + other;
+    }
   } else {
     const totalBase = inputs.baseMonthlyExpense ?? 3000;
     const baseRent = inputs.baseRent ?? (totalBase * 0.35);
