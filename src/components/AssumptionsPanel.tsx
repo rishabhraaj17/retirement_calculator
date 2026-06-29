@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Assumptions } from '@/types';
 
 interface AssumptionsPanelProps {
@@ -160,6 +160,23 @@ function InflationCard({
   inputTestId: string;
   onRateChange: (newRate: number) => void;
 }) {
+  const formatRateStr = (r: number) => Number((r * 100).toFixed(1)).toString();
+  const [localVal, setLocalVal] = useState(formatRateStr(rate));
+
+  useEffect(() => {
+    const propNum = parseFloat(formatRateStr(rate));
+    const localNum = parseFloat(localVal);
+    if (propNum !== localNum && !isNaN(propNum)) {
+      setLocalVal(formatRateStr(rate));
+    }
+  }, [rate]);
+
+  const handleChange = (valStr: string) => {
+    setLocalVal(valStr);
+    const parsed = parseFloat(valStr);
+    onRateChange(!isNaN(parsed) ? parsed / 100 : 0);
+  };
+
   return (
     <div
       style={{
@@ -199,8 +216,8 @@ function InflationCard({
         <input
           data-testid={inputTestId}
           type="number"
-          value={parseFloat((rate * 100).toFixed(1))}
-          onChange={e => onRateChange(parseFloat(e.target.value) / 100 || 0)}
+          value={localVal}
+          onChange={e => handleChange(e.target.value)}
           step="0.1"
           style={{
             background: 'transparent',
