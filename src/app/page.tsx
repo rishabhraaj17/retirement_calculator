@@ -15,6 +15,10 @@ const defaultUserInputs: UserInputs = {
   currentSavings: 50000,
   monthlyContribution: 1000,
   baseMonthlyExpense: 3000,
+  baseRent: 1050,
+  baseGroceries: 540,
+  baseHealthcare: 350,
+  baseOthers: 1060,
 };
 
 const defaultAssumptions: Assumptions = {
@@ -24,6 +28,10 @@ const defaultAssumptions: Assumptions = {
   countryInflation: {
     Germany: 0.05,
     India: 0.04,
+  },
+  countryInvestmentReturn: {
+    Germany: 0.06,
+    India: 0.08,
   },
 };
 

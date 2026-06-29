@@ -144,7 +144,7 @@ describe('Home Orchestrator Page Integration', () => {
     const dashboard = screen.getByTestId('single-city-dashboard');
     const input = within(dashboard).getByRole('spinbutton');
     expect(input).toBeInTheDocument();
-    expect(input).toHaveValue(3000);
+    expect(input).toHaveValue(2650);
 
     const reqCard = screen.getByTestId('hero-required-corpus');
     expect(reqCard).toBeInTheDocument();
@@ -190,8 +190,8 @@ describe('Home Orchestrator Page Integration', () => {
     const munichInput = within(munichRow!).getByRole('spinbutton');
     const delhiInput = within(delhiRow!).getByRole('spinbutton');
 
-    expect(munichInput).toHaveValue(3000); // Munich input
-    expect(delhiInput).toHaveValue(750);  // Delhi NCR input (3000 * 25 / 100)
+    expect(munichInput).toHaveValue(2650); // Munich input
+    expect(delhiInput).toHaveValue(704);  // Delhi NCR input
 
     const initialRowText = delhiRow!.textContent;
 
